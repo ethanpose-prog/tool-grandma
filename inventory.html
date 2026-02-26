@@ -18,53 +18,62 @@
 
     <!-- Header -->
     <div class="max-w-6xl mx-auto flex justify-between items-center mb-8">
-        <h1 class="text-3xl font-black tracking-tighter">
-            LISTE <span class="text-purple-500">MATÉRIEL</span> 📦
-        </h1>
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-600/20 border border-purple-400/30">
+                <svg viewBox="0 0 100 100" class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M20 80 L30 40 L50 20 L70 40 L80 80 Z" />
+                    <circle cx="40" cy="50" r="3" fill="currentColor" />
+                    <circle cx="60" cy="50" r="3" fill="currentColor" />
+                    <path d="M45 15 L35 5 M55 15 L65 5" stroke-linecap="round" />
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-3xl font-black tracking-tighter leading-none">
+                    LISTE <span class="text-purple-500">MATÉRIEL</span> 📦
+                </h1>
+                <p id="userWelcome" class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Chargement profil...</p>
+            </div>
+        </div>
         <div class="flex gap-3">
-            <button onclick="openSettings()" class="bg-purple-600/20 hover:bg-purple-600/40 text-purple-400 px-4 py-2 rounded-lg transition-all border border-purple-500/30 text-sm font-bold flex items-center gap-2">
-                ⚙️ Clés API
+            <button onclick="openSettings()" class="bg-purple-600/10 hover:bg-purple-600/20 text-purple-400 px-4 py-2 rounded-xl transition-all border border-purple-500/20 text-xs font-bold flex items-center gap-2">
+                👤 PROFIL & API
             </button>
-            <a href="index.html" class="text-sm bg-white/5 hover:bg-white/10 px-4 py-2 rounded-lg transition-all border border-white/10">
-                ← Retour
+            <a href="index.html" class="text-xs bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl transition-all border border-white/10 flex items-center">
+                ←
             </a>
         </div>
     </div>
 
     <!-- API Config (Mini) -->
     <div class="max-w-6xl mx-auto mb-8 bg-purple-dark p-6 rounded-2xl border border-white/5 shadow-xl">
-        <div class="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
             <div class="md:col-span-1">
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Profil API</label>
-                <select id="apiKeySelect" onchange="updateSelectedKey()" class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500 outline-none transition-all text-sm">
-                    <option value="">Sélectionnez une clé...</option>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2 tracking-widest">Compte Rentman</label>
+                <select id="apiKeySelect" onchange="updateSelectedKey()" class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500 outline-none transition-all text-sm font-bold">
+                    <option value="">Sélectionnez...</option>
                 </select>
             </div>
             <div class="md:col-span-1">
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Dossier</label>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2 tracking-widest">Dossier</label>
                 <select id="folderSelect" onchange="filterInventory()" class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500 outline-none transition-all text-sm text-purple-400 font-bold">
                     <option value="">Tous</option>
                 </select>
             </div>
-            <div class="md:col-span-3">
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Rechercher</label>
-                <input type="text" id="searchInput" oninput="filterInventory()" placeholder="Filtrer par nom, code..." 
+            <div class="md:col-span-2">
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2 tracking-widest">Rechercher</label>
+                <input type="text" id="searchInput" oninput="filterInventory()" placeholder="Nom, code, specs..." 
                     class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500 outline-none transition-all text-sm">
             </div>
-            <div class="md:col-span-1 flex gap-2">
-                <button onclick="fetchEquipment()" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-4 rounded-xl transition-all">
+            <div class="md:col-span-1">
+                <button onclick="fetchEquipment()" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-black py-3 px-4 rounded-xl transition-all shadow-lg shadow-purple-600/20 uppercase text-xs tracking-widest">
                     Charger
-                </button>
-                <button onclick="toggleProxy()" id="proxyBtn" class="bg-white/5 hover:bg-white/10 text-gray-400 px-4 py-3 rounded-xl border border-white/10 text-[10px] font-mono leading-tight flex flex-col items-center justify-center min-w-[70px]">
-                    <span>PROXY</span>
-                    <span id="proxyState" class="font-black text-red-500">OFF</span>
                 </button>
             </div>
         </div>
-        <div id="statusContainer" class="mt-4 hidden p-3 rounded-lg text-sm bg-black/50 border border-white/5">
+        <div id="statusContainer" class="mt-4 hidden p-3 rounded-xl text-sm bg-black/50 border border-white/5">
             <p id="status" class="text-gray-500 italic"></p>
-            <div id="corsHelp" class="hidden mt-2 text-xs text-red-400 leading-relaxed">
-                ⚠️ <b>Erreur Proxy :</b> Si vous utilisez le Proxy, vous devez d'abord <b>"Demander l'accès temporaire"</b> sur <a href="https://cors-anywhere.herokuapp.com/corsdemo" target="_blank" class="underline">cette page</a> (cliquez sur le bouton bleu).
+            <div id="corsHelp" class="hidden mt-2 text-xs text-red-400 leading-relaxed bg-red-500/10 p-3 rounded-lg border border-red-500/20">
+                ⚠️ <b>Erreur Proxy :</b> Assurez-vous d'avoir activé le proxy dans vos réglages de profil et d'avoir cliqué sur <b>"Request temporary access"</b> sur <a href="https://cors-anywhere.herokuapp.com/corsdemo" target="_blank" class="underline font-bold">cette page</a>.
             </div>
         </div>
     </div>
@@ -145,54 +154,130 @@
         </div>
     </div>
 
-    <!-- Modal Gestion API -->
-    <div id="settingsModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
-        <div class="bg-purple-dark w-full max-w-md rounded-2xl border border-purple-500/30 p-6 shadow-2xl">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-black">Gestion des Clés API</h2>
-                <button onclick="closeSettings()" class="text-gray-500 hover:text-white">✕</button>
+    <!-- Modal Gestion Profil & API -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/95 title-bar-blur hidden flex items-center justify-center p-4 z-[100]">
+        <div class="bg-purple-dark w-full max-w-lg rounded-3xl border border-purple-500/30 overflow-hidden shadow-2xl flex flex-col max-h-[95vh]">
+            <div class="p-6 border-b border-white/5 flex justify-between items-center bg-gradient-to-r from-purple-600/10 to-transparent">
+                <h2 class="text-xl font-black tracking-tighter uppercase">Réglages Profil & API</h2>
+                <button onclick="closeSettings()" class="bg-white/5 hover:bg-white/10 w-10 h-10 rounded-full flex items-center justify-center transition-all">✕</button>
             </div>
             
-            <div class="space-y-4 mb-6">
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nom du profil (ex: Impact Vision)</label>
-                    <input type="text" id="newKeyName" class="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500">
+            <div class="p-6 overflow-y-auto custom-scrollbar space-y-8">
+                <!-- Section Informations Personnelles -->
+                <div class="space-y-4">
+                    <h3 class="text-[10px] font-bold text-purple-400 uppercase tracking-widest border-b border-purple-500/20 pb-2">Informations Personnelles</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nom / Prénom</label>
+                            <input type="text" id="userNameInput" class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-purple-500 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Entreprise</label>
+                            <input type="text" id="userCompanyInput" class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-purple-500 transition-all">
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Clé API Rentman</label>
-                    <input type="password" id="newKeyValue" class="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500">
+
+                <!-- Section Proxy -->
+                <div class="space-y-4">
+                    <h3 class="text-[10px] font-bold text-purple-400 uppercase tracking-widest border-b border-purple-500/20 pb-2">Connexion & Sécurité</h3>
+                    <div class="flex items-center justify-between bg-black/40 p-4 rounded-2xl border border-white/5">
+                        <div>
+                            <p class="text-sm font-bold text-white">Proxy CORS (CORS-Anywhere)</p>
+                            <p class="text-[10px] text-gray-500 uppercase tracking-tighter">Recommandé pour éviter les blocages API Rentman</p>
+                        </div>
+                        <button onclick="toggleProxy()" id="proxyBtn" class="bg-purple-600/20 text-purple-400 px-6 py-2 rounded-xl border border-purple-500/50 text-xs font-black transition-all">
+                            PROXY <span id="proxyState">ON</span>
+                        </button>
+                    </div>
                 </div>
-                <button onclick="addApiKey()" class="w-full bg-purple-600 text-white font-bold py-2 rounded-lg text-sm hover:bg-purple-500 transition-all">
-                    Ajouter la clé
-                </button>
+
+                <!-- Section API Keys -->
+                <div class="space-y-4">
+                    <h3 class="text-[10px] font-bold text-purple-400 uppercase tracking-widest border-b border-purple-500/20 pb-2">Comptes Rentman (Clés API)</h3>
+                    
+                    <div class="bg-black/40 p-4 rounded-2xl border border-white/5 space-y-4">
+                        <div class="grid grid-cols-1 gap-3">
+                            <input type="text" id="newKeyName" placeholder="Nom du profil (ex: Impact Vision)" class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-purple-500 transition-all">
+                            <input type="password" id="newKeyValue" placeholder="Clé API Rentman" class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-purple-500 transition-all">
+                        </div>
+                        <button onclick="addApiKey()" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-widest transition-all">
+                            Ajouter le compte
+                        </button>
+                    </div>
+
+                    <div id="keysList" class="space-y-2">
+                        <!-- List of keys -->
+                    </div>
+                </div>
             </div>
 
-            <div class="border-t border-white/5 pt-4">
-                <h3 class="text-[10px] font-bold text-gray-500 uppercase mb-3">Mes Clés Enregistrées</h3>
-                <div id="keysList" class="space-y-2 max-h-40 overflow-y-auto pr-2">
-                    <!-- List of keys -->
-                </div>
+            <div class="p-6 bg-black/50 border-t border-white/5 flex gap-3">
+                <button onclick="saveProfile()" class="flex-1 bg-white text-black font-black py-3 rounded-xl text-xs uppercase tracking-widest hover:bg-purple-500 hover:text-white transition-all">
+                    Enregistrer les modifications
+                </button>
             </div>
         </div>
     </div>
 
     <script>
         let fullInventory = [];
-        let useProxy = false;
+        let useProxy = true;
         let currentUser = localStorage.getItem('currentUser');
         let currentApiKey = "";
 
         // Initialisation
         window.onload = () => {
-            loadApiKeys();
+            loadProfile();
         };
+
+        function loadProfile() {
+            const userData = JSON.parse(localStorage.getItem(`user_${currentUser}`));
+            if (!userData) return;
+
+            // Update Header
+            const welcome = document.getElementById('userWelcome');
+            welcome.textContent = `${userData.name || 'Technicien'} @ ${userData.company || 'Tool Grandma'}`;
+
+            // Update Inputs in Settings
+            document.getElementById('userNameInput').value = userData.name || '';
+            document.getElementById('userCompanyInput').value = userData.company || '';
+            
+            // Proxy preference
+            if (userData.useProxy !== undefined) {
+                useProxy = userData.useProxy;
+            }
+
+            // Load API Keys
+            loadApiKeys();
+            updateProxyUI();
+        }
+
+        function saveProfile() {
+            let userData = JSON.parse(localStorage.getItem(`user_${currentUser}`)) || { apiKeys: [] };
+            userData.name = document.getElementById('userNameInput').value;
+            userData.company = document.getElementById('userCompanyInput').value;
+            userData.useProxy = useProxy;
+            
+            localStorage.setItem(`user_${currentUser}`, JSON.stringify(userData));
+            loadProfile();
+            closeSettings();
+            
+            // Notification visuelle
+            const status = document.getElementById('status');
+            const statusContainer = document.getElementById('statusContainer');
+            statusContainer.classList.remove('hidden');
+            status.textContent = "Profil mis à jour avec succès.";
+            status.className = "text-purple-400 font-bold";
+            setTimeout(() => statusContainer.classList.add('hidden'), 3000);
+        }
 
         function loadApiKeys() {
             const userData = JSON.parse(localStorage.getItem(`user_${currentUser}`));
             const select = document.getElementById('apiKeySelect');
             const list = document.getElementById('keysList');
             
-            select.innerHTML = '<option value="">Sélectionnez une clé...</option>';
+            select.innerHTML = '<option value="">Sélectionnez...</option>';
             list.innerHTML = '';
 
             if (userData && userData.apiKeys) {
@@ -205,10 +290,15 @@
 
                     // Populate modal list
                     const item = document.createElement('div');
-                    item.className = "flex justify-between items-center bg-black/40 p-2 rounded border border-white/5";
+                    item.className = "flex justify-between items-center bg-black/40 p-3 rounded-xl border border-white/5";
                     item.innerHTML = `
-                        <span class="text-xs font-bold">${key.name}</span>
-                        <button onclick="deleteKey(${index})" class="text-red-500 hover:text-red-400 text-[10px] uppercase font-bold">Supprimer</button>
+                        <div class="flex flex-col">
+                            <span class="text-xs font-bold text-white">${key.name}</span>
+                            <span class="text-[8px] text-gray-500 font-mono">CLE: ••••••••••••</span>
+                        </div>
+                        <button onclick="deleteKey(${index})" class="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white p-2 rounded-lg transition-all text-[10px] uppercase font-bold">
+                            Supprimer
+                        </button>
                     `;
                     list.appendChild(item);
                 });
@@ -220,7 +310,9 @@
             const value = document.getElementById('newKeyValue').value;
             if (!name || !value) return alert("Remplissez tous les champs.");
 
-            let userData = JSON.parse(localStorage.getItem(`user_${currentUser}`));
+            let userData = JSON.parse(localStorage.getItem(`user_${currentUser}`)) || { apiKeys: [] };
+            if (!userData.apiKeys) userData.apiKeys = [];
+            
             userData.apiKeys.push({ name, value });
             localStorage.setItem(`user_${currentUser}`, JSON.stringify(userData));
             
@@ -230,6 +322,7 @@
         }
 
         function deleteKey(index) {
+            if (!confirm("Supprimer ce compte Rentman ?")) return;
             let userData = JSON.parse(localStorage.getItem(`user_${currentUser}`));
             userData.apiKeys.splice(index, 1);
             localStorage.setItem(`user_${currentUser}`, JSON.stringify(userData));
@@ -245,11 +338,19 @@
 
         function toggleProxy() {
             useProxy = !useProxy;
+            updateProxyUI();
+        }
+
+        function updateProxyUI() {
             const btn = document.getElementById('proxyBtn');
             const state = document.getElementById('proxyState');
             state.textContent = useProxy ? 'ON' : 'OFF';
-            state.className = useProxy ? 'font-black text-green-500' : 'font-black text-red-500';
-            btn.className = useProxy ? 'bg-purple-900/20 text-purple-400 px-4 py-3 rounded-xl border border-purple-500/50 text-[10px] font-mono leading-tight flex flex-col items-center justify-center min-w-[70px]' : 'bg-white/5 hover:bg-white/10 text-gray-400 px-4 py-3 rounded-xl border border-white/10 text-[10px] font-mono leading-tight flex flex-col items-center justify-center min-w-[70px]';
+            
+            if (useProxy) {
+                btn.className = 'bg-purple-600 text-white px-6 py-2 rounded-xl border border-purple-500/50 text-xs font-black transition-all';
+            } else {
+                btn.className = 'bg-white/5 text-gray-500 px-6 py-2 rounded-xl border border-white/10 text-xs font-black transition-all';
+            }
         }
 
         function filterInventory() {
@@ -466,6 +567,6 @@
             }
         }
     </script>
-    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v4.9.9-pro-debug</div>
+    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v5.0.0-profile-update</div>
 </body>
 </html>
