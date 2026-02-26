@@ -268,8 +268,10 @@
                 const name = item.name || 'N/A';
                 const code = item.code || '-';
                 
-                // Priorité à la quantité hors réservations pour combinaisons (Rentman standard field)
+                // Priorité à la quantité disponible pour les combinaisons
                 const quantity = item.quantity_excluding_reservations_for_combinations ?? 
+                                 item.quantity_excluding_reservations ??
+                                 item.available_quantity ??
                                  item.quantity ?? 
                                  item.total_quantity ?? 
                                  item.stock_quantity ?? 
@@ -305,6 +307,8 @@
             document.getElementById('modalCode').textContent = item.code || '-';
             
             const quantity = item.quantity_excluding_reservations_for_combinations ?? 
+                             item.quantity_excluding_reservations ??
+                             item.available_quantity ??
                              item.quantity ?? 
                              item.total_quantity ?? 
                              item.stock_quantity ?? 
@@ -398,6 +402,6 @@
             }
         }
     </script>
-    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v4.8.1-fix-click</div>
+    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v4.8.2-stock-fix</div>
 </body>
 </html>
