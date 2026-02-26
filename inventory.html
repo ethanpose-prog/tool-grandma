@@ -11,6 +11,11 @@
         .border-purple { border-color: #9333ea; }
         .text-purple { color: #9333ea; }
         .bg-accent { background-color: #171717; }
+        @keyframes pulse-purple {
+            0%, 100% { border-color: #9333ea; }
+            50% { border-color: #f5d0fe; }
+        }
+        .animate-border { animation: pulse-purple 2s infinite; }
     </style>
 </head>
 <body class="min-h-screen p-4 md:p-8">
@@ -19,60 +24,77 @@
         <h1 class="text-3xl font-black tracking-tighter">
             LISTE <span class="text-purple-500">MATÉRIEL</span> 📦
         </h1>
-        <a href="index.html" class="text-sm bg-white/5 hover:bg-white/10 px-4 py-2 rounded-lg transition-all border border-white/10">
-            ← Retour
-        </a>
+        <div class="flex gap-3">
+            <button onclick="location.reload(true)" class="text-[10px] uppercase font-bold text-gray-500 hover:text-white transition-colors">
+                🔄 Forcer Refresh
+            </button>
+            <a href="index.html" class="text-sm bg-white/5 hover:bg-white/10 px-4 py-2 rounded-lg transition-all border border-white/10">
+                ← Retour
+            </a>
+        </div>
     </div>
 
     <!-- API Config -->
-    <div class="max-w-6xl mx-auto mb-8 bg-purple-dark p-6 rounded-2xl border border-white/5 shadow-xl">
+    <div class="max-w-6xl mx-auto mb-8 bg-purple-dark p-6 rounded-2xl border border-purple/30 shadow-xl relative overflow-hidden">
+        <div class="absolute top-0 right-0 bg-purple-600 text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-widest">
+            v4.5.5 - Fix CORS
+        </div>
+        
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
             <div class="md:col-span-1">
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Clé API Rentman (v2)</label>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Clé API Rentman</label>
                 <input type="password" id="apiKey" placeholder="Entrez votre clé API..." 
-                    class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500 outline-none transition-all">
+                    class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500 outline-none transition-all text-sm">
             </div>
             <div class="md:col-span-1">
                 <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Rechercher</label>
                 <input type="text" id="searchInput" oninput="filterInventory()" placeholder="Filtrer par nom..." 
-                    class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500 outline-none transition-all">
+                    class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500 outline-none transition-all text-sm">
             </div>
             <div class="md:col-span-1 flex gap-2">
-                <button onclick="fetchEquipment()" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-4 rounded-xl transition-all">
+                <button onclick="fetchEquipment()" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg shadow-purple-900/20 active:scale-95">
                     Charger
                 </button>
-                <button onclick="toggleProxy()" id="proxyBtn" class="bg-white/5 hover:bg-white/10 text-gray-400 px-4 py-3 rounded-xl border border-white/10 text-xs font-mono" title="Utiliser un proxy CORS">
-                    Proxy: OFF
+                <button onclick="toggleProxy()" id="proxyBtn" class="bg-white/5 hover:bg-white/10 text-gray-400 px-4 py-3 rounded-xl border border-white/10 text-[10px] font-mono leading-tight flex flex-col items-center justify-center min-w-[80px]" title="Utiliser un proxy CORS">
+                    <span>PROXY</span>
+                    <span id="proxyState" class="font-black text-red-500">OFF</span>
                 </button>
             </div>
         </div>
-        <div id="statusContainer" class="mt-4 hidden p-3 rounded-lg text-sm bg-black/50 border border-white/5">
-            <p id="status" class="text-gray-500 italic"></p>
-            <div id="corsHelp" class="hidden mt-2 text-xs text-yellow-500/80 leading-relaxed">
-                ⚠️ <b>Erreur CORS détectée :</b> Rentman bloque les requêtes directes du navigateur.<br>
-                1. Activez le bouton <b>Proxy</b> ci-dessus (via cors-anywhere).<br>
-                2. Ou utilisez une extension Chrome "CORS Unblock".<br>
-                3. Ou lancez un serveur local (python -m http.server).
+
+        <div id="statusContainer" class="mt-4 hidden p-4 rounded-xl bg-black/40 border border-white/5">
+            <div class="flex items-center gap-3">
+                <div id="statusIndicator" class="w-2 h-2 rounded-full bg-gray-500 animate-pulse"></div>
+                <p id="status" class="text-sm text-gray-400 italic"></p>
+            </div>
+            
+            <div id="corsHelp" class="hidden mt-4 p-4 bg-red-950/20 border border-red-900/50 rounded-lg text-xs text-red-200 leading-relaxed">
+                <p class="font-bold mb-2 text-red-400">🚨 ERREUR DE CONNEXION (CORS)</p>
+                <ol class="list-decimal ml-4 space-y-1">
+                    <li>Activez le bouton <b class="text-white">PROXY: ON</b> ci-dessus.</li>
+                    <li>Si ça échoue, visitez <a href="https://cors-anywhere.herokuapp.com/corsdemo" target="_blank" class="underline text-purple-400">cette page</a> et cliquez sur le bouton d'activation temporaire.</li>
+                    <li>Alternativement, installez l'extension Chrome <b class="text-white">"Allow CORS"</b>.</li>
+                </ol>
             </div>
         </div>
     </div>
 
     <!-- Inventory Table -->
-    <div class="max-w-6xl mx-auto bg-purple-dark rounded-2xl border border-white/5 shadow-xl overflow-hidden">
+    <div class="max-w-6xl mx-auto bg-purple-dark rounded-2xl border border-white/5 shadow-xl overflow-hidden mb-20">
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
-                    <tr class="bg-white/5 text-xs font-bold uppercase text-gray-400 border-b border-white/5">
-                        <th class="px-6 py-4">Nom</th>
-                        <th class="px-6 py-4">Catégorie</th>
-                        <th class="px-6 py-4">Stock</th>
-                        <th class="px-6 py-4">Code Barre</th>
+                    <tr class="bg-white/5 text-[10px] font-bold uppercase text-gray-500 border-b border-white/5 tracking-wider">
+                        <th class="px-6 py-5">Matériel</th>
+                        <th class="px-6 py-5">Dossier / Catégorie</th>
+                        <th class="px-6 py-5">Stock</th>
+                        <th class="px-6 py-5">Code Barre</th>
                     </tr>
                 </thead>
                 <tbody id="inventoryList" class="divide-y divide-white/5">
                     <tr>
-                        <td colspan="4" class="px-6 py-12 text-center text-gray-600 italic">
-                            Entrez votre clé API et cliquez sur charger pour voir votre matériel.
+                        <td colspan="4" class="px-6 py-20 text-center text-gray-600 italic">
+                            Les données apparaîtront ici après le chargement.
                         </td>
                     </tr>
                 </tbody>
@@ -87,15 +109,25 @@
         function toggleProxy() {
             useProxy = !useProxy;
             const btn = document.getElementById('proxyBtn');
-            btn.textContent = `Proxy: ${useProxy ? 'ON' : 'OFF'}`;
-            btn.className = useProxy ? 'bg-purple-900/40 text-purple-400 px-4 py-3 rounded-xl border border-purple-500/50 text-xs font-mono' : 'bg-white/5 hover:bg-white/10 text-gray-400 px-4 py-3 rounded-xl border border-white/10 text-xs font-mono';
+            const state = document.getElementById('proxyState');
+            
+            if (useProxy) {
+                state.textContent = 'ON';
+                state.className = 'font-black text-green-500';
+                btn.className = 'bg-purple-900/20 text-purple-400 px-4 py-3 rounded-xl border border-purple-500/50 text-[10px] font-mono leading-tight flex flex-col items-center justify-center min-w-[80px]';
+            } else {
+                state.textContent = 'OFF';
+                state.className = 'font-black text-red-500';
+                btn.className = 'bg-white/5 hover:bg-white/10 text-gray-400 px-4 py-3 rounded-xl border border-white/10 text-[10px] font-mono leading-tight flex flex-col items-center justify-center min-w-[80px]';
+            }
         }
 
         function filterInventory() {
             const query = document.getElementById('searchInput').value.toLowerCase();
             const filtered = fullInventory.filter(item => 
                 (item.name && item.name.toLowerCase().includes(query)) || 
-                (item.code && item.code.toLowerCase().includes(query))
+                (item.code && item.code.toLowerCase().includes(query)) ||
+                (item.folder && item.folder.toLowerCase().includes(query))
             );
             renderItems(filtered);
         }
@@ -103,7 +135,7 @@
         function renderItems(items) {
             const inventoryList = document.getElementById('inventoryList');
             if (items.length === 0) {
-                inventoryList.innerHTML = `<tr><td colspan="4" class="px-6 py-12 text-center text-gray-500 italic">Aucun matériel ne correspond à la recherche.</td></tr>`;
+                inventoryList.innerHTML = `<tr><td colspan="4" class="px-6 py-20 text-center text-gray-500 italic">Aucun résultat trouvé.</td></tr>`;
                 return;
             }
 
@@ -112,42 +144,53 @@
                 const row = document.createElement('tr');
                 row.className = "hover:bg-white/5 transition-colors group border-b border-white/5 last:border-0";
                 row.innerHTML = `
-                    <td class="px-6 py-4 font-medium text-white group-hover:text-purple-400">${item.name || 'N/A'}</td>
-                    <td class="px-6 py-4 text-gray-400 text-sm">${item.category_name || item.folder || '-'}</td>
                     <td class="px-6 py-4">
-                        <span class="bg-purple-900/30 text-purple-400 px-2 py-1 rounded text-xs font-bold border border-purple-500/20">
-                            ${item.quantity || 0}
+                        <div class="font-bold text-white group-hover:text-purple-400 transition-colors">${item.name || 'Sans nom'}</div>
+                        <div class="text-[10px] text-gray-600 uppercase mt-1">ID: ${item.id || '-'}</div>
+                    </td>
+                    <td class="px-6 py-4 text-gray-400 text-sm">
+                        <span class="bg-white/5 px-2 py-1 rounded border border-white/10 text-[11px]">
+                            ${item.folder || item.category_name || 'Racine'}
                         </span>
                     </td>
-                    <td class="px-6 py-4 text-gray-500 font-mono text-xs">${item.code || '-'}</td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-2">
+                            <span class="bg-purple-900/30 text-purple-400 px-3 py-1 rounded-full text-xs font-black border border-purple-500/20">
+                                ${item.quantity || 0}
+                            </span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-gray-500 font-mono text-xs tracking-tighter">${item.code || '-'}</td>
                 `;
                 inventoryList.appendChild(row);
             });
         }
 
         async function fetchEquipment() {
-            const apiKey = document.getElementById('apiKey').value;
+            const apiKey = document.getElementById('apiKey').value.trim();
             const status = document.getElementById('status');
             const statusContainer = document.getElementById('statusContainer');
+            const statusIndicator = document.getElementById('statusIndicator');
             const corsHelp = document.getElementById('corsHelp');
             const inventoryList = document.getElementById('inventoryList');
 
             if (!apiKey) {
-                alert("Veuillez entrer une clé API.");
+                alert("Erreur: Clé API manquante.");
                 return;
             }
 
             statusContainer.classList.remove('hidden');
             corsHelp.classList.add('hidden');
-            status.textContent = "Connexion à Rentman...";
-            status.className = "text-gray-500 italic";
+            status.textContent = "Tentative de connexion à Rentman...";
+            statusIndicator.className = "w-2 h-2 rounded-full bg-purple-500 animate-ping";
             
-            inventoryList.innerHTML = `<tr><td colspan="4" class="px-6 py-12 text-center text-purple-400"><div class="animate-pulse">Récupération des données...</div></td></tr>`;
+            inventoryList.innerHTML = `<tr><td colspan="4" class="px-6 py-20 text-center"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div></td></tr>`;
 
             try {
+                // Rentman API v2 endpoint
                 let url = 'https://api.rentman.net/equipment';
+                
                 if (useProxy) {
-                    // Utilisation d'un proxy public pour contourner le CORS
                     url = 'https://cors-anywhere.herokuapp.com/' + url;
                 }
 
@@ -155,44 +198,51 @@
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${apiKey}`,
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
+                        'Accept': 'application/json'
                     }
                 });
 
                 if (!response.ok) {
-                    if (response.status === 403 && useProxy) {
-                        throw new Error("Le proxy nécessite une activation (visitez cors-anywhere.herokuapp.com/corsdemo)");
-                    }
-                    throw new Error(`Erreur Rentman: ${response.status}`);
+                    if (response.status === 403) throw new Error("Accès refusé. Vérifiez votre clé API ou activez le proxy.");
+                    throw new Error(`Serveur Rentman: ${response.status}`);
                 }
 
-                const data = await response.json();
-                fullInventory = data.data || data;
+                const jsonResponse = await response.json();
+                
+                // Rentman API v2 structure: { data: [...] }
+                fullInventory = jsonResponse.data || jsonResponse;
+
+                if (!Array.isArray(fullInventory)) {
+                    console.error("Structure inattendue:", jsonResponse);
+                    throw new Error("Format de données invalide reçu de Rentman.");
+                }
 
                 renderItems(fullInventory);
 
-                status.textContent = `${fullInventory.length} articles chargés avec succès.`;
-                status.className = "text-green-500 font-bold";
+                status.textContent = `${fullInventory.length} articles synchronisés.`;
+                status.className = "text-sm text-green-500 font-bold";
+                statusIndicator.className = "w-2 h-2 rounded-full bg-green-500";
 
             } catch (error) {
-                console.error(error);
-                status.textContent = "Échec du chargement.";
-                status.className = "text-red-500 font-bold";
+                console.error("Fetch Error:", error);
+                status.textContent = "Erreur de synchronisation.";
+                status.className = "text-sm text-red-500 font-bold";
+                statusIndicator.className = "w-2 h-2 rounded-full bg-red-500";
                 
-                if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) {
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
                     corsHelp.classList.remove('hidden');
                 } else {
                     status.textContent += ` (${error.message})`;
                 }
                 
-                inventoryList.innerHTML = `<tr><td colspan="4" class="px-6 py-12 text-center text-red-500/50">Erreur de connexion.</td></tr>`;
+                inventoryList.innerHTML = `<tr><td colspan="4" class="px-6 py-20 text-center text-red-500/30 font-medium">Échec de la récupération des données.</td></tr>`;
             }
         }
     </script>
-    <!-- Version Tag -->
-    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-600 uppercase tracking-widest opacity-50">
-        v4.5.3-inventory
+    
+    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+        v4.5.5-stable
     </div>
 </body>
 </html>
