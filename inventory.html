@@ -211,9 +211,12 @@
                 const name = item.name || 'N/A';
                 const code = item.code || '-';
                 
-                // Quantité : Rentman utilise souvent 'quantity' ou 'total_quantity'
-                // On vérifie aussi 'in_stock' ou 'available_quantity' au cas où
-                const quantity = item.quantity ?? item.total_quantity ?? item.stock_quantity ?? item.amount ?? 0;
+                // Priorité à la quantité hors réservations pour combinaisons (Rentman standard field)
+                const quantity = item.quantity_excluding_reservations_for_combinations ?? 
+                                 item.quantity ?? 
+                                 item.total_quantity ?? 
+                                 item.stock_quantity ?? 
+                                 item.amount ?? 0;
                 
                 // Dossier : si expand=folder, c'est un objet
                 let folder = '-';
@@ -277,6 +280,6 @@
             }
         }
     </script>
-    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v4.7.1-quantity-fix</div>
+    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v4.7.2-quantity-fix</div>
 </body>
 </html>
