@@ -13,10 +13,20 @@
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4">
+    <script>
+        if (!localStorage.getItem('currentUser')) {
+            window.location.href = 'login.html';
+        }
+    </script>
     <div class="max-w-2xl w-full bg-purple-dark p-8 rounded-2xl border border-purple shadow-2xl text-center">
-        <h1 class="text-5xl font-black mb-6 tracking-tighter text-white">
-            Tool-<span class="text-purple-500">GrandMA</span> 👵
-        </h1>
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-5xl font-black tracking-tighter text-white">
+                Tool-<span class="text-purple-500">GrandMA</span> 👵
+            </h1>
+            <button onclick="localStorage.removeItem('currentUser'); window.location.reload();" class="text-xs text-red-500 hover:text-red-400 font-bold uppercase tracking-widest">
+                Déconnexion
+            </button>
+        </div>
         <p class="text-gray-400 mb-8 text-lg">L'outil de gestion technique optimisé pour l'événementiel.</p>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
