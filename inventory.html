@@ -229,15 +229,29 @@
         // Initialisation
         window.onload = () => {
             loadProfile();
+            updateProxyUI(); // Force UI update on load
         };
 
         function loadProfile() {
-            const userData = JSON.parse(localStorage.getItem(`user_${currentUser}`));
-            if (!userData) return;
+            let userData = JSON.parse(localStorage.getItem(`user_${currentUser}`));
+            const welcome = document.getElementById('userWelcome');
+            
+            if (!userData) {
+                welcome.textContent = `Technicien @ Tool Grandma`;
+                return;
+            }
+
+            // Migration logic for old API keys
+            const oldKey = localStorage.getItem('rentman_api_key');
+            if (oldKey && (!userData.apiKeys || userData.apiKeys.length === 0)) {
+                if (!userData.apiKeys) userData.apiKeys = [];
+                userData.apiKeys.push({ name: "Compte Principal (Migré)", value: oldKey });
+                localStorage.setItem(`user_${currentUser}`, JSON.stringify(userData));
+                localStorage.removeItem('rentman_api_key'); // Clean up
+            }
 
             // Update Header
-            const welcome = document.getElementById('userWelcome');
-            welcome.textContent = `${userData.name || 'Technicien'} @ ${userData.company || 'Tool Grandma'}`;
+            welcome.textContent = `${userData.name || 'Technicien'} @ ${userData.company || 'Impact Vision'}`;
 
             // Update Inputs in Settings
             document.getElementById('userNameInput').value = userData.name || '';
@@ -250,7 +264,6 @@
 
             // Load API Keys
             loadApiKeys();
-            updateProxyUI();
         }
 
         function saveProfile() {

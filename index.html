@@ -3,56 +3,247 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tool Grandma - Gestion de Stock</title>
+    <title>Tool Grandma - Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #000000; color: #ffffff; }
-        .accent-purple { color: #9333ea; }
-        .bg-purple-dark { background-color: #171717; }
+        .bg-purple-dark { background-color: #0a0a0a; }
         .border-purple { border-color: #9333ea; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #9333ea; border-radius: 10px; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4">
+<body class="min-h-screen p-4 md:p-8 flex flex-col items-center">
     <script>
-        if (!localStorage.getItem('currentUser')) {
-            window.location.href = 'login.html';
-        }
+        if (!localStorage.getItem('currentUser')) window.location.href = 'login.html';
     </script>
-    <div class="max-w-2xl w-full bg-purple-dark p-8 rounded-2xl border border-purple shadow-2xl text-center">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-5xl font-black tracking-tighter text-white">
-                Tool-<span class="text-purple-500">GrandMA</span> 👵
-            </h1>
-            <button onclick="localStorage.removeItem('currentUser'); window.location.reload();" class="text-xs text-red-500 hover:text-red-400 font-bold uppercase tracking-widest">
-                Déconnexion
+
+    <!-- Header -->
+    <div class="w-full max-w-6xl flex justify-between items-center mb-12">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-600/20 border border-purple-400/30">
+                <svg viewBox="0 0 100 100" class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M20 80 L30 40 L50 20 L70 40 L80 80 Z" />
+                    <circle cx="40" cy="50" r="3" fill="currentColor" />
+                    <circle cx="60" cy="50" r="3" fill="currentColor" />
+                    <path d="M45 15 L35 5 M55 15 L65 5" stroke-linecap="round" />
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-3xl font-black tracking-tighter leading-none uppercase">
+                    Tool-<span class="text-purple-500">GrandMA</span> 👵
+                </h1>
+                <p id="userWelcome" class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Chargement profil...</p>
+            </div>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="openSettings()" class="bg-purple-600/10 hover:bg-purple-600/20 text-purple-400 px-4 py-2 rounded-xl transition-all border border-purple-500/20 text-xs font-bold flex items-center gap-2">
+                👤 PROFIL & API
+            </button>
+            <button onclick="localStorage.removeItem('currentUser'); window.location.reload();" class="text-xs bg-red-500/10 hover:bg-red-500/20 text-red-500 px-4 py-2 rounded-xl transition-all border border-red-500/20 font-bold">
+                LOGOUT
             </button>
         </div>
-        <p class="text-gray-400 mb-8 text-lg">L'outil de gestion technique optimisé pour l'événementiel.</p>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
-            <a href="inventory.html" class="p-4 bg-black/50 rounded-xl border border-white/10 hover:border-purple-500 transition-colors cursor-pointer group block">
-                <h3 class="font-bold text-purple-400 group-hover:text-purple-300">📦 Inventaire</h3>
-                <p class="text-sm text-gray-500">Gérez votre parc matériel lumière et vidéo.</p>
-            </a>
-            <div class="p-4 bg-black/50 rounded-xl border border-white/10 hover:border-purple-500 transition-colors cursor-pointer group">
-                <h3 class="font-bold text-purple-400 group-hover:text-purple-300">🗓️ Projets</h3>
-                <p class="text-sm text-gray-500">Planifiez vos sorties et retours de matériel.</p>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="w-full max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Card Inventaire -->
+        <a href="inventory.html" class="md:col-span-2 group relative overflow-hidden bg-purple-dark p-8 rounded-3xl border border-white/5 hover:border-purple-500/50 transition-all shadow-2xl">
+            <div class="relative z-10">
+                <div class="w-14 h-14 bg-purple-600/20 rounded-2xl flex items-center justify-center mb-6 border border-purple-500/20 group-hover:scale-110 transition-transform">
+                    <span class="text-3xl">📦</span>
+                </div>
+                <h3 class="text-3xl font-black tracking-tighter mb-2 group-hover:text-purple-400 transition-colors">INVENTAIRE RENTMAN</h3>
+                <p class="text-gray-400 text-sm leading-relaxed max-w-md">Accédez à votre base de matériel, vérifiez les stocks en temps réel et consultez les fiches techniques.</p>
+                <div class="mt-8 flex items-center gap-2 text-purple-500 font-bold text-xs uppercase tracking-widest">
+                    Explorer le parc matériel <span class="group-hover:translate-x-2 transition-transform">→</span>
+                </div>
+            </div>
+            <!-- Background Decoration -->
+            <div class="absolute top-0 right-0 w-64 h-64 bg-purple-600/5 rounded-full blur-3xl -mr-32 -mt-32 group-hover:bg-purple-600/10 transition-all"></div>
+        </a>
+
+        <!-- Card Projets (Coming Soon) -->
+        <div class="group bg-purple-dark p-8 rounded-3xl border border-white/5 opacity-60 relative overflow-hidden">
+            <div class="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center mb-6 border border-white/10">
+                <span class="text-3xl">🗓️</span>
+            </div>
+            <h3 class="text-xl font-black tracking-tighter mb-2">PROJETS</h3>
+            <p class="text-gray-500 text-xs leading-relaxed">Planification des sorties, retours et feuilles de route.</p>
+            <div class="mt-6">
+                <span class="bg-white/5 text-gray-500 text-[8px] font-bold px-2 py-1 rounded uppercase tracking-widest border border-white/10">En développement</span>
             </div>
         </div>
 
-        <div class="mt-8 pt-6 border-t border-white/5">
-            <button class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-8 rounded-full transition-all transform hover:scale-105">
-                Accéder au Dashboard
-            </button>
+        <!-- Card Scanner (Coming Soon) -->
+        <div class="group bg-purple-dark p-8 rounded-3xl border border-white/5 opacity-60 relative overflow-hidden">
+            <div class="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center mb-6 border border-white/10">
+                <span class="text-3xl">📷</span>
+            </div>
+            <h3 class="text-xl font-black tracking-tighter mb-2">QR SCANNER</h3>
+            <p class="text-gray-500 text-xs leading-relaxed">Scannez le matériel pour un inventaire rapide.</p>
+            <div class="mt-6">
+                <span class="bg-white/5 text-gray-500 text-[8px] font-bold px-2 py-1 rounded uppercase tracking-widest border border-white/10">Prochainement</span>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="md:col-span-3 bg-white/5 p-6 rounded-2xl border border-white/5 flex flex-wrap gap-8 justify-between items-center">
+            <div class="flex gap-8">
+                <div>
+                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Status Système</p>
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span class="text-xs font-bold text-white uppercase">Opérationnel</span>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Version</p>
+                    <span class="text-xs font-bold text-purple-400 uppercase">v5.0.0-profile-update</span>
+                </div>
+            </div>
+            <p class="text-[10px] text-gray-600 italic">Impact Vision Sàrl &copy; 2026</p>
         </div>
     </div>
 
-    <footer class="mt-8 text-gray-600 text-xs">
-        &copy; 2026 Impact Vision Sàrl - Développé par PicoClaw 🦞
-    </footer>
-    <!-- Version Tag -->
-    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-600 uppercase tracking-widest opacity-50">
-        v4.5.3-core
+    <!-- Modal Gestion Profil & API (Same as Inventory) -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/95 backdrop-blur-md hidden flex items-center justify-center p-4 z-[100]">
+        <div class="bg-purple-dark w-full max-w-lg rounded-3xl border border-purple-500/30 overflow-hidden shadow-2xl flex flex-col max-h-[95vh]">
+            <div class="p-6 border-b border-white/5 flex justify-between items-center bg-gradient-to-r from-purple-600/10 to-transparent">
+                <h2 class="text-xl font-black tracking-tighter uppercase">Réglages Profil & API</h2>
+                <button onclick="closeSettings()" class="bg-white/5 hover:bg-white/10 w-10 h-10 rounded-full flex items-center justify-center transition-all">✕</button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto custom-scrollbar space-y-8">
+                <!-- Section Informations Personnelles -->
+                <div class="space-y-4">
+                    <h3 class="text-[10px] font-bold text-purple-400 uppercase tracking-widest border-b border-purple-500/20 pb-2">Informations Personnelles</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nom / Prénom</label>
+                            <input type="text" id="userNameInput" class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-purple-500 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Entreprise</label>
+                            <input type="text" id="userCompanyInput" class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-purple-500 transition-all">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section API Keys -->
+                <div class="space-y-4">
+                    <h3 class="text-[10px] font-bold text-purple-400 uppercase tracking-widest border-b border-purple-500/20 pb-2">Comptes Rentman (Clés API)</h3>
+                    <div class="bg-black/40 p-4 rounded-2xl border border-white/5 space-y-4">
+                        <div class="grid grid-cols-1 gap-3">
+                            <input type="text" id="newKeyName" placeholder="Nom du profil (ex: Impact Vision)" class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-purple-500 transition-all">
+                            <input type="password" id="newKeyValue" placeholder="Clé API Rentman" class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-purple-500 transition-all">
+                        </div>
+                        <button onclick="addApiKey()" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-widest transition-all">
+                            Ajouter le compte
+                        </button>
+                    </div>
+                    <div id="keysList" class="space-y-2"></div>
+                </div>
+            </div>
+
+            <div class="p-6 bg-black/50 border-t border-white/5 flex gap-3">
+                <button onclick="saveProfile()" class="flex-1 bg-white text-black font-black py-3 rounded-xl text-xs uppercase tracking-widest hover:bg-purple-500 hover:text-white transition-all">
+                    Enregistrer les modifications
+                </button>
+            </div>
+        </div>
     </div>
+
+    <script>
+        let currentUser = localStorage.getItem('currentUser');
+
+        window.onload = () => {
+            loadProfile();
+        };
+
+        function loadProfile() {
+            let userData = JSON.parse(localStorage.getItem(`user_${currentUser}`));
+            if (!userData) return;
+
+            // Migration logic for old API keys
+            const oldKey = localStorage.getItem('rentman_api_key');
+            if (oldKey && (!userData.apiKeys || userData.apiKeys.length === 0)) {
+                if (!userData.apiKeys) userData.apiKeys = [];
+                userData.apiKeys.push({ name: "Compte Principal (Migré)", value: oldKey });
+                localStorage.setItem(`user_${currentUser}`, JSON.stringify(userData));
+                localStorage.removeItem('rentman_api_key'); // Clean up
+            }
+
+            const welcome = document.getElementById('userWelcome');
+            welcome.textContent = `${userData.name || 'Technicien'} @ ${userData.company || 'Tool Grandma'}`;
+
+            document.getElementById('userNameInput').value = userData.name || '';
+            document.getElementById('userCompanyInput').value = userData.company || '';
+            
+            loadApiKeys();
+        }
+
+        function saveProfile() {
+            let userData = JSON.parse(localStorage.getItem(`user_${currentUser}`)) || { apiKeys: [] };
+            userData.name = document.getElementById('userNameInput').value;
+            userData.company = document.getElementById('userCompanyInput').value;
+            
+            localStorage.setItem(`user_${currentUser}`, JSON.stringify(userData));
+            loadProfile();
+            closeSettings();
+        }
+
+        function loadApiKeys() {
+            const userData = JSON.parse(localStorage.getItem(`user_${currentUser}`));
+            const list = document.getElementById('keysList');
+            list.innerHTML = '';
+
+            if (userData && userData.apiKeys) {
+                userData.apiKeys.forEach((key, index) => {
+                    const item = document.createElement('div');
+                    item.className = "flex justify-between items-center bg-black/40 p-3 rounded-xl border border-white/5";
+                    item.innerHTML = `
+                        <div class="flex flex-col">
+                            <span class="text-xs font-bold text-white">${key.name}</span>
+                            <span class="text-[8px] text-gray-500 font-mono">CLE: ••••••••••••</span>
+                        </div>
+                        <button onclick="deleteKey(${index})" class="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white p-2 rounded-lg transition-all text-[10px] uppercase font-bold">
+                            Supprimer
+                        </button>
+                    `;
+                    list.appendChild(item);
+                });
+            }
+        }
+
+        function addApiKey() {
+            const name = document.getElementById('newKeyName').value;
+            const value = document.getElementById('newKeyValue').value;
+            if (!name || !value) return alert("Remplissez tous les champs.");
+
+            let userData = JSON.parse(localStorage.getItem(`user_${currentUser}`)) || { apiKeys: [] };
+            if (!userData.apiKeys) userData.apiKeys = [];
+            
+            userData.apiKeys.push({ name, value });
+            localStorage.setItem(`user_${currentUser}`, JSON.stringify(userData));
+            
+            document.getElementById('newKeyName').value = '';
+            document.getElementById('newKeyValue').value = '';
+            loadApiKeys();
+        }
+
+        function deleteKey(index) {
+            if (!confirm("Supprimer ce compte Rentman ?")) return;
+            let userData = JSON.parse(localStorage.getItem(`user_${currentUser}`));
+            userData.apiKeys.splice(index, 1);
+            localStorage.setItem(`user_${currentUser}`, JSON.stringify(userData));
+            loadApiKeys();
+        }
+
+        function openSettings() { document.getElementById('settingsModal').classList.remove('hidden'); }
+        function closeSettings() { document.getElementById('settingsModal').classList.add('hidden'); }
+    </script>
 </body>
 </html>
