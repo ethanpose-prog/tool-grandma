@@ -82,6 +82,63 @@
         </div>
     </div>
 
+    <!-- Modal Détails Article -->
+    <div id="detailModal" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-4 z-[60]">
+        <div class="bg-purple-dark w-full max-w-2xl rounded-3xl border border-purple-500/30 overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            <!-- Header Modal -->
+            <div class="p-6 border-b border-white/5 flex justify-between items-start bg-gradient-to-br from-purple-600/10 to-transparent">
+                <div>
+                    <h2 id="modalTitle" class="text-2xl font-black tracking-tighter text-white">NOM DE L'ARTICLE</h2>
+                    <p id="modalFolder" class="text-purple-400 text-xs font-bold uppercase tracking-widest mt-1">DOSSIER</p>
+                </div>
+                <button onclick="closeDetail()" class="bg-white/5 hover:bg-white/10 w-10 h-10 rounded-full flex items-center justify-center transition-all">✕</button>
+            </div>
+            
+            <!-- Content Modal -->
+            <div class="p-8 overflow-y-auto custom-scrollbar">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Colonne Gauche -->
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2 tracking-widest">Code Article</label>
+                            <p id="modalCode" class="font-mono text-lg text-white bg-black/40 p-3 rounded-xl border border-white/5">CODE-001</p>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2 tracking-widest">Stock Disponible</label>
+                            <div class="flex items-baseline gap-2">
+                                <span id="modalStock" class="text-4xl font-black text-purple-500">0</span>
+                                <span class="text-gray-500 font-bold uppercase text-[10px]">Unités</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Colonne Droite (Specs) -->
+                    <div class="bg-black/40 p-6 rounded-2xl border border-white/5 space-y-4">
+                        <h3 class="text-[10px] font-bold text-purple-400 uppercase tracking-widest border-b border-purple-500/20 pb-2">Spécifications</h3>
+                        <div id="modalSpecs" class="space-y-3">
+                            <!-- Dynamic Content -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Description / Remarques -->
+                <div class="mt-8">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2 tracking-widest">Remarques internes</label>
+                    <div id="modalNotes" class="text-sm text-gray-400 leading-relaxed italic bg-white/5 p-4 rounded-xl border border-white/5 min-h-[60px]">
+                        Aucune remarque.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Modal -->
+            <div class="p-6 bg-black/50 border-t border-white/5 flex justify-end">
+                <button onclick="closeDetail()" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-lg shadow-purple-600/20">
+                    Fermer
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Gestion API -->
     <div id="settingsModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
         <div class="bg-purple-dark w-full max-w-md rounded-2xl border border-purple-500/30 p-6 shadow-2xl">
@@ -206,7 +263,7 @@
                 return;
             }
             inventoryList.innerHTML = '';
-            items.forEach(item => {
+            items.forEach((item, index) => {
                 // Rentman API fields mapping
                 const name = item.name || 'N/A';
                 const code = item.code || '-';
@@ -225,15 +282,70 @@
                 }
 
                 const row = document.createElement('tr');
-                row.className = "hover:bg-white/5 transition-colors border-b border-white/5 last:border-0";
+                row.className = "hover:bg-purple-600/10 cursor-pointer transition-colors border-b border-white/5 last:border-0 group";
+                row.onclick = () => openDetail(item);
                 row.innerHTML = `
-                    <td class="px-6 py-4 font-bold text-white">${name}</td>
+                    <td class="px-6 py-4 font-bold text-white group-hover:text-purple-400 transition-colors">${name}</td>
                     <td class="px-6 py-4 text-gray-400 text-xs">${folder}</td>
                     <td class="px-6 py-4"><span class="bg-purple-900/30 text-purple-400 px-2 py-1 rounded text-xs font-black border border-purple-500/20">${quantity}</span></td>
                     <td class="px-6 py-4 text-gray-500 font-mono text-[10px]">${code}</td>
                 `;
                 inventoryList.appendChild(row);
             });
+        }
+
+        function openDetail(item) {
+            document.getElementById('modalTitle').textContent = item.name || 'N/A';
+            document.getElementById('modalCode').textContent = item.code || '-';
+            
+            const quantity = item.quantity_excluding_reservations_for_combinations ?? 
+                             item.quantity ?? 
+                             item.total_quantity ?? 
+                             item.stock_quantity ?? 
+                             item.amount ?? 0;
+            document.getElementById('modalStock').textContent = quantity;
+            
+            let folder = '-';
+            if (item.folder) {
+                folder = typeof item.folder === 'object' ? (item.folder.name || '-') : item.folder;
+            }
+            document.getElementById('modalFolder').textContent = folder;
+            document.getElementById('modalNotes').textContent = item.remark || item.internal_remark || "Aucune remarque interne renseignée.";
+
+            // Specs dynamiques
+            const specsContainer = document.getElementById('modalSpecs');
+            specsContainer.innerHTML = '';
+            
+            const specs = [
+                { label: 'Poids', value: item.weight ? `${item.weight} kg` : null },
+                { label: 'Volume', value: item.volume ? `${item.volume} m³` : null },
+                { label: 'Prix Location', value: item.rental_price ? `${item.rental_price} CHF` : null },
+                { label: 'Consommation', value: item.power_usage ? `${item.power_usage} W` : null }
+            ];
+
+            specs.forEach(spec => {
+                if (spec.value) {
+                    const div = document.createElement('div');
+                    div.className = "flex justify-between items-center py-2 border-b border-white/5 last:border-0";
+                    div.innerHTML = `
+                        <span class="text-[10px] text-gray-500 font-bold uppercase">${spec.label}</span>
+                        <span class="text-sm font-mono text-white">${spec.value}</span>
+                    `;
+                    specsContainer.appendChild(div);
+                }
+            });
+
+            if (specsContainer.innerHTML === '') {
+                specsContainer.innerHTML = '<p class="text-xs text-gray-600 italic">Aucune spécification technique disponible.</p>';
+            }
+
+            document.getElementById('detailModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // Bloque le scroll arrière
+        }
+
+        function closeDetail() {
+            document.getElementById('detailModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
         }
 
         async function fetchEquipment() {
@@ -280,6 +392,6 @@
             }
         }
     </script>
-    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v4.7.2-quantity-fix</div>
+    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v4.8.0-details-view</div>
 </body>
 </html>
