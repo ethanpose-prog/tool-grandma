@@ -64,7 +64,7 @@
         <div id="statusContainer" class="mt-4 hidden p-3 rounded-lg text-sm bg-black/50 border border-white/5">
             <p id="status" class="text-gray-500 italic"></p>
             <div id="corsHelp" class="hidden mt-2 text-xs text-red-400 leading-relaxed">
-                ⚠️ <b>Erreur CORS :</b> Activez le <b>Proxy: ON</b> ou visitez <a href="https://cors-anywhere.herokuapp.com/corsdemo" target="_blank" class="underline">cette page</a>.
+                ⚠️ <b>Erreur Proxy :</b> Si vous utilisez le Proxy, vous devez d'abord <b>"Demander l'accès temporaire"</b> sur <a href="https://cors-anywhere.herokuapp.com/corsdemo" target="_blank" class="underline">cette page</a> (cliquez sur le bouton bleu).
             </div>
         </div>
     </div>
@@ -422,7 +422,8 @@
                 const response = await fetch(url, {
                     headers: { 
                         'Authorization': `Bearer ${currentApiKey}`, 
-                        'Accept': 'application/json' 
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
                     }
                 });
 
@@ -444,6 +445,6 @@
             }
         }
     </script>
-    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v4.9.1-folder-fix</div>
+    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v4.9.3-proxy-fix</div>
 </body>
 </html>
