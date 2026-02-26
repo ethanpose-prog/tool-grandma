@@ -207,13 +207,26 @@
             }
             inventoryList.innerHTML = '';
             items.forEach(item => {
+                // Gestion dynamique des champs Rentman
+                const name = item.name || 'N/A';
+                const code = item.code || '-';
+                
+                // Quantité : on cherche plusieurs champs possibles
+                const quantity = item.quantity ?? item.stock_quantity ?? item.total_quantity ?? 0;
+                
+                // Dossier : si expand=folder, c'est un objet
+                let folder = '-';
+                if (item.folder) {
+                    folder = typeof item.folder === 'object' ? (item.folder.name || '-') : item.folder;
+                }
+
                 const row = document.createElement('tr');
                 row.className = "hover:bg-white/5 transition-colors border-b border-white/5 last:border-0";
                 row.innerHTML = `
-                    <td class="px-6 py-4 font-bold text-white">${item.name || 'N/A'}</td>
-                    <td class="px-6 py-4 text-gray-400 text-xs">${item.folder || '-'}</td>
-                    <td class="px-6 py-4"><span class="bg-purple-900/30 text-purple-400 px-2 py-1 rounded text-xs font-black border border-purple-500/20">${item.quantity || 0}</span></td>
-                    <td class="px-6 py-4 text-gray-500 font-mono text-[10px]">${item.code || '-'}</td>
+                    <td class="px-6 py-4 font-bold text-white">${name}</td>
+                    <td class="px-6 py-4 text-gray-400 text-xs">${folder}</td>
+                    <td class="px-6 py-4"><span class="bg-purple-900/30 text-purple-400 px-2 py-1 rounded text-xs font-black border border-purple-500/20">${quantity}</span></td>
+                    <td class="px-6 py-4 text-gray-500 font-mono text-[10px]">${code}</td>
                 `;
                 inventoryList.appendChild(row);
             });
@@ -233,7 +246,7 @@
             inventoryList.innerHTML = `<tr><td colspan="4" class="px-6 py-20 text-center"><div class="animate-spin inline-block w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full"></div></td></tr>`;
 
             try {
-                let url = 'https://api.rentman.net/equipment';
+                let url = 'https://api.rentman.net/equipment?expand=folder';
                 if (useProxy) url = 'https://cors-anywhere.herokuapp.com/' + url;
 
                 const response = await fetch(url, {
@@ -243,7 +256,12 @@
                 if (!response.ok) throw new Error(`Erreur Rentman: ${response.status}`);
 
                 const data = await response.json();
+                // Rentman API can return {data: [...]} or just [...]
                 fullInventory = data.data || data;
+                
+                // Si c'est toujours vide ou bizarre, on log pour debug (visible en console)
+                console.log("Rentman Data:", fullInventory[0]);
+
                 renderItems(fullInventory);
                 status.textContent = `${fullInventory.length} articles chargés.`;
                 status.className = "text-green-500 font-bold";
@@ -254,6 +272,6 @@
             }
         }
     </script>
-    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v4.6.0-auth-ready</div>
+    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v4.6.1-stock-fix</div>
 </body>
 </html>
