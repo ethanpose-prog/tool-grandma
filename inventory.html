@@ -427,7 +427,10 @@
                     }
                 });
 
-                if (!response.ok) throw new Error(`Erreur Rentman: ${response.status}`);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Erreur Rentman: ${response.status} - ${errorText.substring(0, 100)}`);
+                }
 
                 const data = await response.json();
                 console.log("Rentman Data Sample:", data.data ? data.data[0] : data[0]);
@@ -439,12 +442,17 @@
                 status.textContent = `${fullInventory.length} articles chargés.`;
                 status.className = "text-green-500 font-bold";
             } catch (error) {
-                status.textContent = "Échec du chargement.";
-                status.className = "text-red-500 font-bold";
-                if (error.message.includes('Failed to fetch')) corsHelp.classList.remove('hidden');
+                console.error("Fetch Error:", error);
+                status.textContent = `Échec: ${error.message}`;
+                status.className = "text-red-500 font-bold text-xs";
+                
+                // Afficher l'aide si c'est une erreur réseau ou un 400/403 lié au proxy
+                if (error.message.includes('Failed to fetch') || error.message.includes('400') || error.message.includes('403')) {
+                    corsHelp.classList.remove('hidden');
+                }
             }
         }
     </script>
-    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v4.9.3-proxy-fix</div>
+    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v4.9.4-debug-fix</div>
 </body>
 </html>
