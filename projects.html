@@ -302,96 +302,100 @@
             grid.innerHTML = `<div class="col-span-full py-20 text-center"><div class="animate-spin inline-block w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full"></div></div>`;
 
             try {
-                let url = 'https://api.rentman.net/projects/';
+                // Rentman API requires specific endpoints for detailed data
+                // We use the 'projects' endpoint which usually returns basic info in list
+                // and we'll ensure we handle both array and object responses
+                let url = 'https://api.rentman.net/projects';
                 if (useProxy) url = 'https://cors-anywhere.herokuapp.com/' + url;
+                
                 const response = await fetch(url, {
-                    headers: { 'Authorization': `Bearer ${currentApiKey}`, 'X-Requested-With': 'XMLHttpRequest' }
+                    headers: { 
+                        'Authorization': `Bearer ${currentApiKey}`, 
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/json'
+                    }
                 });
+                
                 if (!response.ok) throw new Error(`Erreur ${response.status}`);
                 const data = await response.json();
-                allProjects = Array.isArray(data) ? data : (data.data || []);
+                
+                // Rentman API v1 response structure handling
+                allProjects = [];
+                if (Array.isArray(data)) {
+                    allProjects = data;
+                } else if (data.data && Array.isArray(data.data)) {
+                    allProjects = data.data;
+                } else if (typeof data === 'object') {
+                    // Sometimes it's an object with numeric keys
+                    allProjects = Object.values(data).filter(i => typeof i === 'object' && i.id);
+                }
                 
                 populateTypes(allProjects);
                 renderProjects(allProjects);
                 status.textContent = `${allProjects.length} projets chargés.`;
                 status.className = "text-green-500 font-bold";
             } catch (error) {
+                console.error("Fetch error:", error);
                 status.textContent = `Échec: ${error.message}`;
                 status.className = "text-red-500 font-bold";
                 document.getElementById('corsHelp').classList.remove('hidden');
             }
         }
 
-        function populateTypes(projects) {
-            const select = document.getElementById('typeSelect');
-            const types = [...new Set(projects.map(p => p.type).filter(Boolean))];
-            select.innerHTML = '<option value="">Tous les types</option>';
-            types.sort().forEach(t => {
-                const opt = document.createElement('option');
-                opt.value = t;
-                opt.textContent = t;
-                select.appendChild(opt);
-            });
-        }
+        async function openProject(p) {
+            // Affichage immédiat des données déjà présentes
+            updateModalUI(p);
+            document.getElementById('projectModal').classList.remove('hidden');
 
-        function filterProjects() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            const type = document.getElementById('typeSelect').value;
-            const filtered = allProjects.filter(p => {
-                const matchesQuery = (p.name && p.name.toLowerCase().includes(query)) || (p.client_name && p.client_name.toLowerCase().includes(query));
-                const matchesType = !type || p.type === type;
-                return matchesQuery && matchesType;
-            });
-            renderProjects(filtered);
-        }
-
-        function renderProjects(projects) {
-            const grid = document.getElementById('projectsGrid');
-            if (projects.length === 0) {
-                grid.innerHTML = `<div class="col-span-full py-20 text-center text-gray-500">Aucun projet trouvé.</div>`;
-                return;
+            // Tentative de récupération des détails complets si nécessaire
+            try {
+                let url = `https://api.rentman.net/projects/${p.id}`;
+                if (useProxy) url = 'https://cors-anywhere.herokuapp.com/' + url;
+                
+                const response = await fetch(url, {
+                    headers: { 
+                        'Authorization': `Bearer ${currentApiKey}`, 
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                
+                if (response.ok) {
+                    const detailedData = await response.json();
+                    const details = detailedData.data || detailedData;
+                    // Fusionner les nouvelles infos
+                    const updatedProject = { ...p, ...details };
+                    updateModalUI(updatedProject);
+                }
+            } catch (error) {
+                console.warn("Impossible de charger les détails complets:", error);
             }
-            grid.innerHTML = '';
-            projects.forEach(p => {
-                const card = document.createElement('div');
-                card.className = "group bg-purple-dark p-6 rounded-3xl border border-white/5 hover:border-purple-500/50 transition-all cursor-pointer relative overflow-hidden";
-                card.onclick = () => openProject(p);
-                
-                const dateStart = p.usage_period_start ? new Date(p.usage_period_start).toLocaleDateString() : 'N/A';
-                
-                card.innerHTML = `
-                    <div class="relative z-10">
-                        <div class="flex justify-between items-start mb-4">
-                            <span class="text-[8px] font-bold text-purple-400 uppercase tracking-widest bg-purple-600/10 px-2 py-1 rounded border border-purple-500/20">${p.type || 'Projet'}</span>
-                            <span class="text-[10px] font-mono text-gray-500">#${p.project_number || p.id}</span>
-                        </div>
-                        <h3 class="text-xl font-black tracking-tighter mb-1 group-hover:text-purple-400 transition-colors uppercase truncate">${p.name}</h3>
-                        <p class="text-gray-400 text-xs font-bold mb-4">${p.client_name || 'Sans client'}</p>
-                        <div class="flex items-center gap-2 text-[10px] text-gray-500 font-bold uppercase tracking-widest">
-                            <span>📅 ${dateStart}</span>
-                        </div>
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
         }
 
-        function openProject(p) {
-            document.getElementById('modalTitle').textContent = p.name;
-            document.getElementById('modalClient').textContent = p.client_name || 'Sans client';
-            document.getElementById('modalStart').textContent = p.usage_period_start ? new Date(p.usage_period_start).toLocaleString() : 'N/A';
-            document.getElementById('modalEnd').textContent = p.usage_period_end ? new Date(p.usage_period_end).toLocaleString() : 'N/A';
-            document.getElementById('modalStatus').textContent = p.status || 'Statut inconnu';
-            document.getElementById('modalNotes').textContent = p.remark || "Aucune remarque.";
+        function updateModalUI(p) {
+            document.getElementById('modalTitle').textContent = p.name || 'Sans nom';
+            document.getElementById('modalClient').textContent = p.client_name || p.customer_name || 'Sans client';
+            
+            // Gestion des dates Rentman (peuvent être dans différents champs selon la version API)
+            const start = p.usage_period_start || p.from || p.start;
+            const end = p.usage_period_end || p.until || p.end;
+            
+            document.getElementById('modalStart').textContent = start ? new Date(start).toLocaleString() : 'N/A';
+            document.getElementById('modalEnd').textContent = end ? new Date(end).toLocaleString() : 'N/A';
+            
+            // Statut
+            const statusObj = p.status_name || p.status || 'Inconnu';
+            document.getElementById('modalStatus').textContent = typeof statusObj === 'object' ? statusObj.name : statusObj;
+            
+            // Remarques
+            document.getElementById('modalNotes').textContent = p.remark || p.notes || p.external_remark || "Aucune remarque.";
             
             const info = document.getElementById('modalInfo');
             info.innerHTML = `
-                <div class="flex justify-between py-2 border-b border-white/5"><span class="text-[10px] text-gray-500 font-bold uppercase">Numéro</span><span class="text-xs font-mono text-white">${p.project_number || '-'}</span></div>
-                <div class="flex justify-between py-2 border-b border-white/5"><span class="text-[10px] text-gray-500 font-bold uppercase">Lieu</span><span class="text-xs text-white">${p.location_name || '-'}</span></div>
-                <div class="flex justify-between py-2 border-b border-white/5"><span class="text-[10px] text-gray-500 font-bold uppercase">Responsable</span><span class="text-xs text-white">${p.account_manager_name || '-'}</span></div>
+                <div class="flex justify-between py-2 border-b border-white/5"><span class="text-[10px] text-gray-500 font-bold uppercase">Numéro</span><span class="text-xs font-mono text-white">${p.project_number || p.number || '-'}</span></div>
+                <div class="flex justify-between py-2 border-b border-white/5"><span class="text-[10px] text-gray-500 font-bold uppercase">Lieu</span><span class="text-xs text-white">${p.location_name || p.venue || '-'}</span></div>
+                <div class="flex justify-between py-2 border-b border-white/5"><span class="text-[10px] text-gray-500 font-bold uppercase">Type</span><span class="text-xs text-white">${p.type || '-'}</span></div>
+                <div class="flex justify-between py-2 border-b border-white/5"><span class="text-[10px] text-gray-500 font-bold uppercase">Responsable</span><span class="text-xs text-white">${p.account_manager_name || p.manager || '-'}</span></div>
             `;
-            
-            document.getElementById('projectModal').classList.remove('hidden');
         }
 
         function closeProject() { document.getElementById('projectModal').classList.add('hidden'); }
