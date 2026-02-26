@@ -33,16 +33,22 @@
 
     <!-- API Config (Mini) -->
     <div class="max-w-6xl mx-auto mb-8 bg-purple-dark p-6 rounded-2xl border border-white/5 shadow-xl">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
             <div class="md:col-span-1">
                 <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Profil API</label>
                 <select id="apiKeySelect" onchange="updateSelectedKey()" class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500 outline-none transition-all text-sm">
                     <option value="">Sélectionnez une clé...</option>
                 </select>
             </div>
-            <div class="md:col-span-2">
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Rechercher dans l'inventaire</label>
-                <input type="text" id="searchInput" oninput="filterInventory()" placeholder="Filtrer par nom, code, catégorie..." 
+            <div class="md:col-span-1">
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Dossier</label>
+                <select id="folderSelect" onchange="filterInventory()" class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500 outline-none transition-all text-sm text-purple-400 font-bold">
+                    <option value="">Tous</option>
+                </select>
+            </div>
+            <div class="md:col-span-3">
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Rechercher</label>
+                <input type="text" id="searchInput" oninput="filterInventory()" placeholder="Filtrer par nom, code..." 
                     class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500 outline-none transition-all text-sm">
             </div>
             <div class="md:col-span-1 flex gap-2">
@@ -248,12 +254,45 @@
 
         function filterInventory() {
             const query = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = fullInventory.filter(item => 
-                (item.name && item.name.toLowerCase().includes(query)) || 
-                (item.code && item.code.toLowerCase().includes(query)) ||
-                (item.folder && item.folder.toLowerCase().includes(query))
-            );
+            const selectedFolder = document.getElementById('folderSelect').value;
+            
+            const filtered = fullInventory.filter(item => {
+                const matchesQuery = (item.name && item.name.toLowerCase().includes(query)) || 
+                                    (item.code && item.code.toLowerCase().includes(query));
+                
+                let itemFolder = '-';
+                if (item.folder) {
+                    itemFolder = typeof item.folder === 'object' ? (item.folder.name || '-') : item.folder;
+                }
+                
+                const matchesFolder = !selectedFolder || itemFolder === selectedFolder;
+                
+                return matchesQuery && matchesFolder;
+            });
             renderItems(filtered);
+        }
+
+        function populateFolders(items) {
+            const folderSelect = document.getElementById('folderSelect');
+            const folders = new Set();
+            
+            items.forEach(item => {
+                if (item.folder) {
+                    const folderName = typeof item.folder === 'object' ? (item.folder.name || '-') : item.folder;
+                    if (folderName !== '-') folders.add(folderName);
+                }
+            });
+
+            // Sort folders alphabetically
+            const sortedFolders = Array.from(folders).sort();
+            
+            folderSelect.innerHTML = '<option value="">Tous les dossiers</option>';
+            sortedFolders.forEach(folder => {
+                const opt = document.createElement('option');
+                opt.value = folder;
+                opt.textContent = folder;
+                folderSelect.appendChild(opt);
+            });
         }
 
         function renderItems(items) {
@@ -389,9 +428,7 @@
                 // Rentman API can return {data: [...]} or just [...]
                 fullInventory = data.data || data;
                 
-                // Si c'est toujours vide ou bizarre, on log pour debug (visible en console)
-                console.log("Rentman Data:", fullInventory[0]);
-
+                populateFolders(fullInventory);
                 renderItems(fullInventory);
                 status.textContent = `${fullInventory.length} articles chargés.`;
                 status.className = "text-green-500 font-bold";
@@ -402,6 +439,6 @@
             }
         }
     </script>
-    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v4.8.2-stock-fix</div>
+    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v4.9.0-folder-search</div>
 </body>
 </html>
