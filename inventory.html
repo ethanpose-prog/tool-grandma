@@ -274,23 +274,29 @@
 
         function populateFolders(items) {
             const folderSelect = document.getElementById('folderSelect');
-            const folders = new Set();
+            const folders = new Map();
             
             items.forEach(item => {
                 if (item.folder) {
-                    const folderName = typeof item.folder === 'object' ? (item.folder.name || '-') : item.folder;
-                    if (folderName !== '-') folders.add(folderName);
+                    // Si expand=folder a fonctionné, on a un objet avec .name
+                    // Sinon, on cherche .folder_name ou on utilise l'ID comme clé
+                    const folderName = item.folder.name || item.folder_name || item.folder;
+                    const folderId = item.folder.id || item.folder;
+                    
+                    if (folderName && folderName !== '-') {
+                        folders.set(folderId, folderName);
+                    }
                 }
             });
 
-            // Sort folders alphabetically
-            const sortedFolders = Array.from(folders).sort();
+            // Sort folders by name
+            const sortedFolders = Array.from(folders.values()).sort();
             
             folderSelect.innerHTML = '<option value="">Tous les dossiers</option>';
-            sortedFolders.forEach(folder => {
+            sortedFolders.forEach(name => {
                 const opt = document.createElement('option');
-                opt.value = folder;
-                opt.textContent = folder;
+                opt.value = name;
+                opt.textContent = name;
                 folderSelect.appendChild(opt);
             });
         }
@@ -316,18 +322,16 @@
                                  item.stock_quantity ?? 
                                  item.amount ?? 0;
                 
-                // Dossier : si expand=folder, c'est un objet
+                // Dossier : gestion flexible de l'objet ou de la string
                 let folder = '-';
                 if (item.folder) {
-                    folder = typeof item.folder === 'object' ? (item.folder.name || '-') : item.folder;
+                    folder = item.folder.name || item.folder_name || (typeof item.folder === 'string' ? item.folder : '-');
                 }
 
                 const row = document.createElement('tr');
                 row.className = "hover:bg-purple-600/10 cursor-pointer transition-colors border-b border-white/5 last:border-0 group";
                 
-                // Correction du clic : on passe l'index de l'élément filtré pour être sûr
                 row.addEventListener('click', () => {
-                    console.log("Row clicked for item:", name);
                     openDetail(item);
                 });
 
@@ -356,7 +360,7 @@
             
             let folder = '-';
             if (item.folder) {
-                folder = typeof item.folder === 'object' ? (item.folder.name || '-') : item.folder;
+                folder = item.folder.name || item.folder_name || (typeof item.folder === 'string' ? item.folder : '-');
             }
             document.getElementById('modalFolder').textContent = folder;
             document.getElementById('modalNotes').textContent = item.remark || item.internal_remark || "Aucune remarque interne renseignée.";
