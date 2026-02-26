@@ -292,6 +292,20 @@
             btn.className = useProxy ? 'bg-purple-600 text-white px-6 py-2 rounded-xl border border-purple-500/50 text-xs font-black transition-all' : 'bg-white/5 text-gray-500 px-6 py-2 rounded-xl border border-white/10 text-xs font-black transition-all';
         }
 
+        function getVal(obj, ...keys) {
+            if (!obj) return '-';
+            for (let key of keys) {
+                let val = obj[key];
+                if (val === undefined || val === null) continue;
+                if (typeof val === 'object') {
+                    if (val.name) return val.name;
+                    if (val.first_name) return `${val.first_name} ${val.last_name || ''}`.trim();
+                }
+                return val;
+            }
+            return '-';
+        }
+
         async function fetchProjects() {
             if (!currentApiKey) return alert("Sélectionnez une clé API.");
             const status = document.getElementById('status');
@@ -302,9 +316,6 @@
             grid.innerHTML = `<div class="col-span-full py-20 text-center"><div class="animate-spin inline-block w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full"></div></div>`;
 
             try {
-                // Rentman API requires specific endpoints for detailed data
-                // We use the 'projects' endpoint which usually returns basic info in list
-                // and we'll ensure we handle both array and object responses
                 let url = 'https://api.rentman.net/projects';
                 if (useProxy) url = 'https://cors-anywhere.herokuapp.com/' + url;
                 
@@ -319,14 +330,12 @@
                 if (!response.ok) throw new Error(`Erreur ${response.status}`);
                 const data = await response.json();
                 
-                // Rentman API v1 response structure handling
                 allProjects = [];
                 if (Array.isArray(data)) {
                     allProjects = data;
                 } else if (data.data && Array.isArray(data.data)) {
                     allProjects = data.data;
                 } else if (typeof data === 'object') {
-                    // Sometimes it's an object with numeric keys
                     allProjects = Object.values(data).filter(i => typeof i === 'object' && i.id);
                 }
                 
@@ -342,12 +351,74 @@
             }
         }
 
+        function populateTypes(projects) {
+            const select = document.getElementById('typeSelect');
+            const types = [...new Set(projects.map(p => getVal(p, 'project_type', 'type')).filter(t => t !== '-'))];
+            select.innerHTML = '<option value="">Tous les types</option>';
+            types.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t;
+                opt.textContent = t;
+                select.appendChild(opt);
+            });
+        }
+
+        function filterProjects() {
+            const type = document.getElementById('typeSelect').value;
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allProjects.filter(p => {
+                const matchesType = !type || getVal(p, 'project_type', 'type') === type;
+                const matchesSearch = !search || 
+                    (p.name && p.name.toLowerCase().includes(search)) || 
+                    (getVal(p, 'client_name', 'client', 'customer_name').toLowerCase().includes(search));
+                return matchesType && matchesSearch;
+            });
+            renderProjects(filtered);
+        }
+
+        function renderProjects(projects) {
+            const grid = document.getElementById('projectsGrid');
+            if (projects.length === 0) {
+                grid.innerHTML = '<div class="col-span-full py-20 text-center text-gray-600 italic bg-purple-dark rounded-2xl border border-white/5">Aucun projet trouvé.</div>';
+                return;
+            }
+
+            grid.innerHTML = projects.map(p => {
+                const client = getVal(p, 'client_name', 'client', 'customer_name');
+                const status = getVal(p, 'status_name', 'status');
+                const start = p.usage_period_start || (p.usage_period ? p.usage_period.start : null) || p.from || p.start;
+                const dateStr = start ? new Date(start).toLocaleDateString('fr-CH') : 'Date inconnue';
+                
+                return `
+                    <div onclick="openProjectById(${p.id})" class="bg-purple-dark p-6 rounded-3xl border border-white/5 hover:border-purple-500/50 transition-all cursor-pointer group relative overflow-hidden">
+                        <div class="absolute top-0 right-0 p-4">
+                            <span class="text-[8px] font-black bg-purple-600/20 text-purple-400 px-2 py-1 rounded-md border border-purple-500/20 uppercase">${status}</span>
+                        </div>
+                        <div class="mb-4">
+                            <p class="text-[10px] font-bold text-purple-500 uppercase tracking-widest mb-1">${client}</p>
+                            <h3 class="text-lg font-black text-white group-hover:text-purple-400 transition-colors uppercase leading-tight">${p.name || 'Sans nom'}</h3>
+                        </div>
+                        <div class="flex items-center gap-4 text-gray-500">
+                            <div class="flex items-center gap-1">
+                                <span class="text-xs font-bold">${dateStr}</span>
+                            </div>
+                            <div class="w-1 h-1 bg-white/10 rounded-full"></div>
+                            <span class="text-[10px] uppercase font-bold tracking-tighter">${getVal(p, 'project_type', 'type')}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openProjectById(id) {
+            const p = allProjects.find(item => item.id == id);
+            if (p) openProject(p);
+        }
+
         async function openProject(p) {
-            // Affichage immédiat des données déjà présentes
             updateModalUI(p);
             document.getElementById('projectModal').classList.remove('hidden');
 
-            // Tentative de récupération des détails complets si nécessaire
             try {
                 let url = `https://api.rentman.net/projects/${p.id}`;
                 if (useProxy) url = 'https://cors-anywhere.herokuapp.com/' + url;
@@ -362,39 +433,43 @@
                 if (response.ok) {
                     const detailedData = await response.json();
                     const details = detailedData.data || detailedData;
-                    // Fusionner les nouvelles infos
                     const updatedProject = { ...p, ...details };
+                    // Mettre à jour dans la liste globale aussi
+                    const index = allProjects.findIndex(item => item.id == p.id);
+                    if (index !== -1) allProjects[index] = updatedProject;
                     updateModalUI(updatedProject);
                 }
             } catch (error) {
-                console.warn("Impossible de charger les détails complets:", error);
+                console.warn("Détails complets indisponibles:", error);
             }
         }
 
         function updateModalUI(p) {
             document.getElementById('modalTitle').textContent = p.name || 'Sans nom';
-            document.getElementById('modalClient').textContent = p.client_name || p.customer_name || 'Sans client';
             
-            // Gestion des dates Rentman (peuvent être dans différents champs selon la version API)
-            const start = p.usage_period_start || p.from || p.start;
-            const end = p.usage_period_end || p.until || p.end;
+            const client = getVal(p, 'client_name', 'client', 'customer_name');
+            document.getElementById('modalClient').textContent = client;
             
-            document.getElementById('modalStart').textContent = start ? new Date(start).toLocaleString() : 'N/A';
-            document.getElementById('modalEnd').textContent = end ? new Date(end).toLocaleString() : 'N/A';
+            const startU = p.usage_period_start || (p.usage_period ? p.usage_period.start : null) || p.from || p.start;
+            const endU = p.usage_period_end || (p.usage_period ? p.usage_period.end : null) || p.until || p.end;
             
-            // Statut
-            const statusObj = p.status_name || p.status || 'Inconnu';
-            document.getElementById('modalStatus').textContent = typeof statusObj === 'object' ? statusObj.name : statusObj;
+            document.getElementById('modalStart').textContent = startU ? new Date(startU).toLocaleString('fr-CH') : 'N/A';
+            document.getElementById('modalEnd').textContent = endU ? new Date(endU).toLocaleString('fr-CH') : 'N/A';
             
-            // Remarques
+            document.getElementById('modalStatus').textContent = getVal(p, 'status_name', 'status');
             document.getElementById('modalNotes').textContent = p.remark || p.notes || p.external_remark || "Aucune remarque.";
             
+            const startP = p.plan_period_start || (p.plan_period ? p.plan_period.start : null) || p.planning_start;
+            const endP = p.plan_period_end || (p.plan_period ? p.plan_period.end : null) || p.planning_end;
+            const planStr = startP ? `${new Date(startP).toLocaleDateString('fr-CH')} au ${new Date(endP).toLocaleDateString('fr-CH')}` : '-';
+
             const info = document.getElementById('modalInfo');
             info.innerHTML = `
                 <div class="flex justify-between py-2 border-b border-white/5"><span class="text-[10px] text-gray-500 font-bold uppercase">Numéro</span><span class="text-xs font-mono text-white">${p.project_number || p.number || '-'}</span></div>
-                <div class="flex justify-between py-2 border-b border-white/5"><span class="text-[10px] text-gray-500 font-bold uppercase">Lieu</span><span class="text-xs text-white">${p.location_name || p.venue || '-'}</span></div>
-                <div class="flex justify-between py-2 border-b border-white/5"><span class="text-[10px] text-gray-500 font-bold uppercase">Type</span><span class="text-xs text-white">${p.type || '-'}</span></div>
-                <div class="flex justify-between py-2 border-b border-white/5"><span class="text-[10px] text-gray-500 font-bold uppercase">Responsable</span><span class="text-xs text-white">${p.account_manager_name || p.manager || '-'}</span></div>
+                <div class="flex justify-between py-2 border-b border-white/5"><span class="text-[10px] text-gray-500 font-bold uppercase">Lieu</span><span class="text-xs text-white">${getVal(p, 'location_name', 'location', 'venue')}</span></div>
+                <div class="flex justify-between py-2 border-b border-white/5"><span class="text-[10px] text-gray-500 font-bold uppercase">Type</span><span class="text-xs text-white">${getVal(p, 'project_type', 'type')}</span></div>
+                <div class="flex justify-between py-2 border-b border-white/5"><span class="text-[10px] text-gray-500 font-bold uppercase">Responsable</span><span class="text-xs text-white">${getVal(p, 'account_manager_name', 'account_manager', 'manager')}</span></div>
+                <div class="flex justify-between py-2 border-b border-white/5"><span class="text-[10px] text-purple-400 font-bold uppercase">Planification</span><span class="text-xs text-white font-bold">${planStr}</span></div>
             `;
         }
 
