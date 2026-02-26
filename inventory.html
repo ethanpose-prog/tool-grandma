@@ -246,11 +246,14 @@
             inventoryList.innerHTML = `<tr><td colspan="4" class="px-6 py-20 text-center"><div class="animate-spin inline-block w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full"></div></td></tr>`;
 
             try {
-                let url = 'https://api.rentman.net/equipment?expand=folder';
+                let url = 'https://api.rentman.net/equipment';
                 if (useProxy) url = 'https://cors-anywhere.herokuapp.com/' + url;
 
                 const response = await fetch(url, {
-                    headers: { 'Authorization': `Bearer ${currentApiKey}`, 'Accept': 'application/json' }
+                    headers: { 
+                        'Authorization': `Bearer ${currentApiKey}`, 
+                        'Accept': 'application/json' 
+                    }
                 });
 
                 if (!response.ok) throw new Error(`Erreur Rentman: ${response.status}`);
@@ -272,6 +275,6 @@
             }
         }
     </script>
-    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v4.6.1-stock-fix</div>
+    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v4.6.2-fix-400</div>
 </body>
 </html>
