@@ -416,8 +416,8 @@
 
             try {
                 // L'API Public Rentman ne supporte pas "expand=folder".
-                // On utilise juste limit=1000 pour avoir un maximum d'items.
-                let url = 'https://api.rentman.net/equipment?limit=1000';
+                // On utilise un cache-buster pour forcer la mise à jour du script.
+                let url = 'https://api.rentman.net/equipment?limit=500&_cb=' + Date.now();
                 console.log("Fetching URL:", url);
                 if (useProxy) url = 'https://cors-anywhere.herokuapp.com/' + url;
 
@@ -458,6 +458,6 @@
             }
         }
     </script>
-    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v4.9.5-api-fix</div>
+    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v4.9.6-cache-fix</div>
 </body>
 </html>
