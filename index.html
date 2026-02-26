@@ -14,12 +14,26 @@
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4">
     <div class="max-w-2xl w-full bg-purple-dark p-8 rounded-2xl border border-purple shadow-2xl text-center">
-        <h1 class="text-4xl font-bold mb-4 accent-purple">Tool Grandma 👵</h1>
-        <p class="text-gray-400 mb-8">Initialisation du projet en cours...</p>
+        <h1 class="text-5xl font-black mb-6 tracking-tighter text-white">
+            Tool-<span class="text-purple-500">GrandMA</span> 👵
+        </h1>
+        <p class="text-gray-400 mb-8 text-lg">L'outil de gestion technique optimisé pour l'événementiel.</p>
         
-        <div class="flex flex-col gap-4 items-center">
-            <div class="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
-            <p class="text-sm font-mono text-purple-400">v0.1.0-alpha</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+            <div class="p-4 bg-black/50 rounded-xl border border-white/10 hover:border-purple-500 transition-colors cursor-pointer group">
+                <h3 class="font-bold text-purple-400 group-hover:text-purple-300">📦 Inventaire</h3>
+                <p class="text-sm text-gray-500">Gérez votre parc matériel lumière et vidéo.</p>
+            </div>
+            <div class="p-4 bg-black/50 rounded-xl border border-white/10 hover:border-purple-500 transition-colors cursor-pointer group">
+                <h3 class="font-bold text-purple-400 group-hover:text-purple-300">🗓️ Projets</h3>
+                <p class="text-sm text-gray-500">Planifiez vos sorties et retours de matériel.</p>
+            </div>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-white/5">
+            <button class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-8 rounded-full transition-all transform hover:scale-105">
+                Accéder au Dashboard
+            </button>
         </div>
     </div>
 
