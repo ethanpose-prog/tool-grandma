@@ -530,7 +530,7 @@
 
             try {
                 // URL ultra-propre avec slash final (souvent requis par certaines API)
-                let url = 'https://api.rentman.net/equipment/';
+                let url = 'https://api.rentman.net/equipment/?expand=folder';
                 console.log("Fetching URL:", url);
                 if (useProxy) url = 'https://cors-anywhere.herokuapp.com/' + url;
 
@@ -580,6 +580,6 @@
             }
         }
     </script>
-    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v5.0.0-profile-update</div>
+    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v5.0.2-folder-fix</div>
 </body>
 </html>
