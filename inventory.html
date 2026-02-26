@@ -425,6 +425,7 @@
                 if (!response.ok) throw new Error(`Erreur Rentman: ${response.status}`);
 
                 const data = await response.json();
+                console.log("Rentman Data Sample:", data.data ? data.data[0] : data[0]);
                 // Rentman API can return {data: [...]} or just [...]
                 fullInventory = data.data || data;
                 
