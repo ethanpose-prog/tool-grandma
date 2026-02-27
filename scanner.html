@@ -490,6 +490,19 @@
                     }
                 }
 
+                if (!item) {
+                    // DERNIER RECOURS : Recherche par texte brut dans toute l'API
+                    status.textContent = "Recherche approfondie...";
+                    let searchUrl = `https://api.rentman.net/equipment/?query=${encodeURIComponent(originalBarcode)}`;
+                    if (useProxy) searchUrl = 'https://cors-anywhere.herokuapp.com/' + searchUrl;
+                    const finalResp = await fetch(searchUrl, { headers: { 'Authorization': authHeader, 'X-Requested-With': 'XMLHttpRequest' } });
+                    if (finalResp.ok) {
+                        const finalData = await finalResp.json();
+                        const finalItems = Array.isArray(finalData) ? finalData : (finalData.data || []);
+                        if (finalItems.length > 0) item = finalItems[0];
+                    }
+                }
+
                 if (!item) throw new Error("Article non trouvé.");
 
                 openDetail(item);
@@ -588,6 +601,6 @@
         });
         requestAnimationFrame(updateMascots);
     </script>
-    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v5.7.1-stable</div>
+    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v5.8.0-stable</div>
 </body>
 </html>
