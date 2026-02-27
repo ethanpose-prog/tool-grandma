@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Projets Rentman - Tool Grandma</title>
+    <title>Dashboard</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #000000; color: #ffffff; }
@@ -12,6 +13,86 @@
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #9333ea; border-radius: 10px; }
+
+        /* Mascot Animations */
+        @keyframes mascot-blink {
+            0%, 90%, 100% { transform: scaleY(1); transform-origin: center; }
+            95% { transform: scaleY(0.1); transform-origin: center; }
+        }
+        @keyframes mascot-look {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-1.5px); }
+            75% { transform: translateX(1.5px); }
+        }
+        @keyframes mascot-float {
+            0%, 100% { transform: translateY(0) rotate(0); }
+            25% { transform: translateY(-2px) rotate(-1deg); }
+            75% { transform: translateY(1px) rotate(1deg); }
+        }
+        @keyframes mascot-ears-wiggle {
+            0%, 100% { transform: skewX(0deg); }
+            25% { transform: skewX(-2deg); }
+            75% { transform: skewX(2deg); }
+        }
+
+        .mascot-wake svg { animation: mascot-float 4s infinite ease-in-out; }
+        .mascot-wake .mascot-ears { animation: mascot-ears-wiggle 4s infinite ease-in-out; transform-origin: bottom; transform-box: fill-box; }
+        
+        .anim-blink .mascot-eyes-group { animation: mascot-blink 4s infinite; }
+        .anim-look .mascot-eyes-group { animation: mascot-look 3s infinite ease-in-out; }
+
+        /* Zzz Animation */
+        @keyframes zzz-anim {
+            0% { transform: translate(0, 0) scale(0.5); opacity: 0; }
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { transform: translate(10px, -20px) scale(1.2); opacity: 0; }
+        }
+        .zzz { opacity: 0; font-family: 'Arial', sans-serif; font-weight: bold; fill: #475569; pointer-events: none; }
+        .mascot-sleep .zzz-1 { animation: zzz-anim 3s infinite; }
+        .mascot-sleep .zzz-2 { animation: zzz-anim 3s infinite 1s; }
+        .mascot-sleep .zzz-3 { animation: zzz-anim 3s infinite 2s; }
+
+        /* Mascot States */
+        .mascot-sleep .mascot-eyes { opacity: 0.6; transform: scaleY(0.2); transform-origin: center 18px; transition: all 1s; }
+        .mascot-wake .mascot-eyes { opacity: 1; transform: scaleY(1); transition: all 0.3s; }
+        .mascot-sleep .mascot-ears { stroke: #000000; transition: all 1s; }
+        .mascot-wake .mascot-ears { stroke: #171717; transition: all 0.3s; }
+
+        /* Eye tracking transition */
+        .eye-l, .eye-r { transition: transform 0.1s ease-out; }
+
+        /* Stunned State */
+        @keyframes spiral-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .mascot-stunned .mascot-eyes { display: none; }
+        .mascot-stunned .mascot-spirals { display: block !important; }
+        .mascot-stunned .spiral-path { transform-origin: center; transform-box: fill-box; animation: spiral-rotate 2s infinite linear; }
+        
+        /* Hit Animation */
+        @keyframes mascot-hit-anim {
+            0% { transform: scale(1); }
+            20% { transform: scale(0.8) translateY(5px); }
+            40% { transform: scale(1.1) translateY(-2px); }
+            100% { transform: scale(1); }
+        }
+        .hit-anim { animation: mascot-hit-anim 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+
+        /* Wiggle Animation */
+        @keyframes mascot-wiggle {
+            0%, 100% { transform: translate(0, 0) rotate(0); }
+            25% { transform: translate(-var(--wgl-x), var(--wgl-y)) rotate(calc(-1 * var(--wgl-r))); }
+            50% { transform: translate(var(--wgl-x), calc(-1 * var(--wgl-y))) rotate(var(--wgl-r)); }
+            75% { transform: translate(calc(-0.5 * var(--wgl-x)), calc(-1 * var(--wgl-y))) rotate(calc(-0.5 * var(--wgl-r))); }
+        }
+        .mascot-wiggle-active svg { animation: mascot-wiggle 0.1s infinite linear !important; }
+
+        /* Intrigued & Judging Animations */
+        @keyframes mascot-intrigued-anim { 0%, 100% { transform: rotate(0deg); } 20%, 80% { transform: rotate(-12deg); } }
+        @keyframes mascot-judge-anim { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-3px); } 40%, 80% { transform: translateX(3px); } }
+        @keyframes mascot-surprise-anim { 0% { transform: scale(1); } 20% { transform: scale(1.1) translateY(-3px); } 40% { transform: scale(0.9); } 100% { transform: scale(1); } }
+        .anim-intrigued svg { animation: mascot-intrigued-anim 2s ease-in-out !important; }
+        .anim-judge svg { animation: mascot-judge-anim 0.8s ease-in-out 2 !important; }
+        .anim-surprise svg { animation: mascot-surprise-anim 0.4s ease-out !important; }
     </style>
 </head>
 <body class="min-h-screen p-4 md:p-8">
@@ -20,24 +101,19 @@
     </script>
 
     <!-- Header -->
-    <div class="max-w-6xl mx-auto flex justify-between items-center mb-8">
+    <div class="max-w-6xl mx-auto flex justify-between items-center mb-8 pl-16 md:pl-24">
         <div class="flex items-center gap-4">
-            <div class="w-12 h-12 bg-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-600/20 border border-purple-400/30">
-                <svg viewBox="0 0 100 100" class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <path d="M20 80 L30 40 L50 20 L70 40 L80 80 Z" />
-                    <circle cx="40" cy="50" r="3" fill="currentColor" />
-                    <circle cx="60" cy="50" r="3" fill="currentColor" />
-                    <path d="M45 15 L35 5 M55 15 L65 5" stroke-linecap="round" />
-                </svg>
-            </div>
             <div>
-                <h1 class="text-3xl font-black tracking-tighter leading-none">
-                    NOS <span class="text-purple-500">PROJETS</span> 🗓️
+                <h1 class="text-3xl font-black tracking-tighter leading-none uppercase">
+                    DASHBOARD
                 </h1>
                 <p id="userWelcome" class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Chargement profil...</p>
             </div>
         </div>
         <div class="flex gap-3">
+            <a href="/chat" class="bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-xl transition-all border border-white/10 text-xs font-bold flex items-center gap-2">
+                🤖 RETOUR AU CHAT
+            </a>
             <button onclick="openSettings()" class="bg-purple-600/10 hover:bg-purple-600/20 text-purple-400 px-4 py-2 rounded-xl transition-all border border-purple-500/20 text-xs font-bold flex items-center gap-2">
                 👤 PROFIL & API
             </button>
@@ -121,6 +197,13 @@
                         <div id="modalInfo" class="space-y-3">
                             <!-- Dynamic Content -->
                         </div>
+                    </div>
+                </div>
+
+                <div class="mt-8">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2 tracking-widest">Équipements</label>
+                    <div id="modalEquipment" class="bg-black/40 rounded-2xl border border-white/5 overflow-hidden">
+                        <div class="p-4 text-center text-gray-600 text-xs italic">Chargement des équipements...</div>
                     </div>
                 </div>
 
@@ -316,25 +399,31 @@
             grid.innerHTML = `<div class="col-span-full py-20 text-center"><div class="animate-spin inline-block w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full"></div></div>`;
 
             try {
+                // Rentman API V2 ne supporte pas 'expand' comme paramètre de requête.
+                // Les dates sont maintenant dans usageperiod_start / usageperiod_end par défaut.
                 let url = 'https://api.rentman.net/projects';
                 if (useProxy) url = 'https://cors-anywhere.herokuapp.com/' + url;
                 
                 const response = await fetch(url, {
                     headers: { 
-                        'Authorization': `Bearer ${currentApiKey}`, 
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Content-Type': 'application/json'
+                        'Authorization': currentApiKey.includes(' ') ? currentApiKey : `Bearer ${currentApiKey}`, 
+                        'X-Requested-With': 'XMLHttpRequest'
                     }
                 });
                 
-                if (!response.ok) throw new Error(`Erreur ${response.status}`);
+                if (!response.ok) {
+                    const errorBody = await response.text();
+                    console.error("API Error Body:", errorBody);
+                    throw new Error(`Erreur ${response.status}: ${errorBody || 'Requête invalide'}`);
+                }
                 const data = await response.json();
                 
                 allProjects = [];
-                if (Array.isArray(data)) {
-                    allProjects = data;
-                } else if (data.data && Array.isArray(data.data)) {
+                // La structure Rentman V2 est généralement { data: [...] }
+                if (data.data && Array.isArray(data.data)) {
                     allProjects = data.data;
+                } else if (Array.isArray(data)) {
+                    allProjects = data;
                 } else if (typeof data === 'object') {
                     allProjects = Object.values(data).filter(i => typeof i === 'object' && i.id);
                 }
@@ -368,9 +457,10 @@
             const search = document.getElementById('searchInput').value.toLowerCase();
             const filtered = allProjects.filter(p => {
                 const matchesType = !type || getVal(p, 'project_type', 'type') === type;
+                const client = getVal(p, 'client_name', 'client', 'customer_name', 'customer').toLowerCase();
                 const matchesSearch = !search || 
                     (p.name && p.name.toLowerCase().includes(search)) || 
-                    (getVal(p, 'client_name', 'client', 'customer_name').toLowerCase().includes(search));
+                    (client.includes(search));
                 return matchesType && matchesSearch;
             });
             renderProjects(filtered);
@@ -384,9 +474,9 @@
             }
 
             grid.innerHTML = projects.map(p => {
-                const client = getVal(p, 'client_name', 'client', 'customer_name');
-                const status = getVal(p, 'status_name', 'status');
-                const start = p.usage_period_start || (p.usage_period ? p.usage_period.start : null) || p.from || p.start;
+                const client = getVal(p, 'client_name', 'client', 'customer_name', 'customer');
+                const status = getVal(p, 'status_name', 'status', 'deposit_status');
+                const start = p.usageperiod_start || p.usage_period_start || (p.usage_period ? p.usage_period.start : null) || p.from || p.start;
                 const dateStr = start ? new Date(start).toLocaleDateString('fr-CH') : 'Date inconnue';
                 
                 return `
@@ -418,14 +508,16 @@
         async function openProject(p) {
             updateModalUI(p);
             document.getElementById('projectModal').classList.remove('hidden');
+            document.getElementById('modalEquipment').innerHTML = '<div class="p-4 text-center text-gray-600 text-xs italic">Chargement des équipements...</div>';
 
             try {
+                // 1. Fetch Project Details
                 let url = `https://api.rentman.net/projects/${p.id}`;
                 if (useProxy) url = 'https://cors-anywhere.herokuapp.com/' + url;
                 
                 const response = await fetch(url, {
                     headers: { 
-                        'Authorization': `Bearer ${currentApiKey}`, 
+                        'Authorization': currentApiKey.includes(' ') ? currentApiKey : `Bearer ${currentApiKey}`, 
                         'X-Requested-With': 'XMLHttpRequest'
                     }
                 });
@@ -433,40 +525,118 @@
                 if (response.ok) {
                     const detailedData = await response.json();
                     const details = detailedData.data || detailedData;
-                    const updatedProject = { ...p, ...details };
-                    // Mettre à jour dans la liste globale aussi
+                    
+                    let locAddr = "";
+                    if (details.location) {
+                        const l = details.location;
+                        locAddr = [l.address, l.postal_code, l.city].filter(x => x).join(', ');
+                    }
+                    
+                    const updatedProject = { ...p, ...details, location_address: locAddr };
                     const index = allProjects.findIndex(item => item.id == p.id);
                     if (index !== -1) allProjects[index] = updatedProject;
                     updateModalUI(updatedProject);
                 }
+
+                // 2. Fetch Project Equipment
+                // Note: Rentman API v2 utilizes different endpoints for equipment.
+                // We try 'project-equipment-items?project=ID' (standard v2) first, then fallbacks.
+                let eqUrl = `https://api.rentman.net/project-equipment-items?project=${p.id}`;
+                if (useProxy) eqUrl = 'https://cors-anywhere.herokuapp.com/' + eqUrl;
+
+                const eqResponse = await fetch(eqUrl, {
+                    headers: { 
+                        'Authorization': currentApiKey.includes(' ') ? currentApiKey : `Bearer ${currentApiKey}`, 
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (eqResponse.ok) {
+                    const eqData = await eqResponse.json();
+                    const items = eqData.data || eqData;
+                    renderEquipment(items);
+                } else {
+                    // Fallback to project-specific paths if top-level filter fails
+                    let eqAltUrl = `https://api.rentman.net/projects/${p.id}/equipment`;
+                    if (useProxy) eqAltUrl = 'https://cors-anywhere.herokuapp.com/' + eqAltUrl;
+                    
+                    const eqAltRes = await fetch(eqAltUrl, {
+                        headers: { 
+                            'Authorization': currentApiKey.includes(' ') ? currentApiKey : `Bearer ${currentApiKey}`, 
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+
+                    if (eqAltRes.ok) {
+                        const eqAltData = await eqAltRes.json();
+                        renderEquipment(eqAltData.data || eqAltData);
+                    } else {
+                        document.getElementById('modalEquipment').innerHTML = '<div class="p-4 text-center text-red-500/50 text-xs italic">Impossible de charger les équipements (Erreur API).</div>';
+                    }
+                }
+
             } catch (error) {
                 console.warn("Détails complets indisponibles:", error);
+                document.getElementById('modalEquipment').innerHTML = '<div class="p-4 text-center text-red-500/50 text-xs italic">Erreur lors de la récupération des données.</div>';
             }
+        }
+
+        function renderEquipment(items) {
+            const container = document.getElementById('modalEquipment');
+            if (!items || items.length === 0) {
+                container.innerHTML = '<div class="p-4 text-center text-gray-600 text-xs italic">Aucun équipement lié à ce projet.</div>';
+                return;
+            }
+
+            let html = '<div class="overflow-x-auto"><table class="w-full text-left text-xs">';
+            html += '<thead class="bg-white/5 text-[10px] font-bold text-gray-500 uppercase tracking-widest border-b border-white/5"><tr><th class="px-4 py-3">Article</th><th class="px-4 py-3 text-right">Qté</th></tr></thead>';
+            html += '<tbody class="divide-y divide-white/5">';
+            
+            items.forEach(item => {
+            // Robust mapping for Rentman V2 equipment fields
+            const name = item.name || item.item_name || (item.equipment ? item.equipment.name : 'Article inconnu');
+            const code = item.code || item.item_code || (item.equipment ? item.equipment.code : '');
+            const quantity = item.quantity || item.amount || 0;
+
+            html += `
+                <tr class="hover:bg-white/5 transition-colors">
+                    <td class="px-4 py-3">
+                        <div class="font-bold text-white uppercase">${name}</div>
+                        <div class="text-[9px] text-gray-500 font-mono">${code}</div>
+                    </td>
+                    <td class="px-4 py-3 text-right font-black text-purple-400">${quantity}</td>
+                </tr>
+            `;
+        });
+
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
         }
 
         function updateModalUI(p) {
             document.getElementById('modalTitle').textContent = p.name || 'Sans nom';
             
-            const client = getVal(p, 'client_name', 'client', 'customer_name');
+            const client = getVal(p, 'client_name', 'client', 'customer_name', 'customer');
             document.getElementById('modalClient').textContent = client;
             
-            const startU = p.usage_period_start || (p.usage_period ? p.usage_period.start : null) || p.from || p.start;
-            const endU = p.usage_period_end || (p.usage_period ? p.usage_period.end : null) || p.until || p.end;
+            const startU = p.usageperiod_start || p.usage_period_start || (p.usage_period ? p.usage_period.start : null) || p.from || p.start;
+            const endU = p.usageperiod_end || p.usage_period_end || (p.usage_period ? p.usage_period.end : null) || p.until || p.end;
             
             document.getElementById('modalStart').textContent = startU ? new Date(startU).toLocaleString('fr-CH') : 'N/A';
             document.getElementById('modalEnd').textContent = endU ? new Date(endU).toLocaleString('fr-CH') : 'N/A';
             
-            document.getElementById('modalStatus').textContent = getVal(p, 'status_name', 'status');
+            document.getElementById('modalStatus').textContent = getVal(p, 'status_name', 'status', 'deposit_status');
             document.getElementById('modalNotes').textContent = p.remark || p.notes || p.external_remark || "Aucune remarque.";
             
-            const startP = p.plan_period_start || (p.plan_period ? p.plan_period.start : null) || p.planning_start;
-            const endP = p.plan_period_end || (p.plan_period ? p.plan_period.end : null) || p.planning_end;
+            const startP = p.planperiod_start || p.plan_period_start || (p.plan_period ? p.plan_period.start : null) || p.planning_start;
+            const endP = p.planperiod_end || p.plan_period_end || (p.plan_period ? p.plan_period.end : null) || p.planning_end;
             const planStr = startP ? `${new Date(startP).toLocaleDateString('fr-CH')} au ${new Date(endP).toLocaleDateString('fr-CH')}` : '-';
 
             const info = document.getElementById('modalInfo');
             info.innerHTML = `
                 <div class="flex justify-between py-2 border-b border-white/5"><span class="text-[10px] text-gray-500 font-bold uppercase">Numéro</span><span class="text-xs font-mono text-white">${p.project_number || p.number || '-'}</span></div>
                 <div class="flex justify-between py-2 border-b border-white/5"><span class="text-[10px] text-gray-500 font-bold uppercase">Lieu</span><span class="text-xs text-white">${getVal(p, 'location_name', 'location', 'venue')}</span></div>
+                <div id="venueAddressRow" class="flex justify-between py-2 border-b border-white/5 ${p.location_address ? '' : 'hidden'}"><span class="text-[10px] text-gray-500 font-bold uppercase">Adresse Lieu</span><span id="venueAddress" class="text-[10px] text-white text-right max-w-[200px]">${p.location_address || ''}</span></div>
                 <div class="flex justify-between py-2 border-b border-white/5"><span class="text-[10px] text-gray-500 font-bold uppercase">Type</span><span class="text-xs text-white">${getVal(p, 'project_type', 'type')}</span></div>
                 <div class="flex justify-between py-2 border-b border-white/5"><span class="text-[10px] text-gray-500 font-bold uppercase">Responsable</span><span class="text-xs text-white">${getVal(p, 'account_manager_name', 'account_manager', 'manager')}</span></div>
                 <div class="flex justify-between py-2 border-b border-white/5"><span class="text-[10px] text-purple-400 font-bold uppercase">Planification</span><span class="text-xs text-white font-bold">${planStr}</span></div>
@@ -477,3 +647,172 @@
     </script>
 </body>
 </html>
+    <!-- Global Mascot (Top Left) -->
+    <div id="header-mascot" class="fixed top-4 left-4 w-16 h-16 md:w-24 md:h-24 transition-all duration-500 mascot-sleep z-[2000] cursor-pointer">
+        <!-- Speech Bubble -->
+        <div id="mascot-bubble" class="absolute top-1/2 left-full -translate-y-1/2 ml-[9px] bg-[#0a0a0a]/90 text-purple-600 px-3 py-1.5 rounded-xl text-[10px] font-black shadow-2xl opacity-0 transition-all duration-500 pointer-events-none whitespace-nowrap z-[2001] border-2 border-purple-600">
+            <span id="bubble-text"></span>
+            <div class="absolute top-1/2 -left-1.5 -translate-y-1/2 w-3 h-3 bg-[#0a0a0a]/90 rotate-45 border-l-2 border-b-2 border-purple-600"></div>
+        </div>
+        <svg viewBox="0 0 40 40" class="w-full h-full overflow-visible">
+            <defs>
+                <radialGradient id="mascot-head-grad" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                    <stop offset="0%" stop-color="#262626" />
+                    <stop offset="100%" stop-color="#0a0a0a" />
+                </radialGradient>
+            </defs>
+            <path class="mascot-ears" d="M13 12L16 6L19 12" stroke="#171717" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <path class="mascot-ears" d="M27 12L24 6L21 12" stroke="#171717" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="10" y="12" width="20" height="16" rx="2" fill="url(#mascot-head-grad)" stroke="#000000" stroke-width="1.6"/>
+            <g class="mascot-eyes mascot-eyes-group">
+                <rect id="header-eye-l-fixed" class="eye-l" x="14" y="18" width="3" height="1.5" rx="0.5" fill="#9333ea"/>
+                <rect id="header-eye-r-fixed" class="eye-r" x="23" y="18" width="3" height="1.5" rx="0.5" fill="#9333ea"/>
+            </g>
+            <g class="mascot-spirals" style="display: none;">
+                <path class="spiral-path" d="M13.5,18.75 a2,2 0 1,1 4,0 a1.5,1.5 0 1,1 -3,0 a1,1 0 1,1 2,0" fill="none" stroke="#9333ea" stroke-width="0.8" stroke-linecap="round"/>
+                <path class="spiral-path" d="M22.5,18.75 a2,2 0 1,1 4,0 a1.5,1.5 0 1,1 -3,0 a1,1 0 1,1 2,0" fill="none" stroke="#9333ea" stroke-width="0.8" stroke-linecap="round"/>
+            </g>
+            <!-- Zzz elements -->
+            <g class="zzz-group">
+                <text x="32" y="10" class="zzz zzz-1" font-size="6">Z</text>
+                <text x="35" y="5" class="zzz zzz-2" font-size="4">z</text>
+                <text x="38" y="0" class="zzz zzz-3" font-size="3">z</text>
+            </g>
+        </svg>
+    </div>
+
+    <script>
+        // Mascot Logic
+        let mascotSleepTimer;
+        let randomBehaviorTimer;
+        let mouseX = 0, mouseY = 0, prevMouseX = 0, prevMouseY = 0;
+        const bubbleMessages = ["C'est propre !", "T'as vérifié la NIBT ?", "Impact Vision style ?", "Rigging safe ?", "ImpactFreestyle", "Dashboard power"];
+
+        function setHeaderMascotState(state) {
+            const mascot = document.getElementById('header-mascot');
+            if (!mascot) return;
+            mascot.classList.remove('mascot-stunned', 'anim-intrigued', 'anim-judge', 'anim-surprise'); 
+            if (state === 'wake') {
+                const wasSleeping = mascot.classList.contains('mascot-sleep');
+                mascot.classList.remove('mascot-sleep');
+                mascot.classList.add('mascot-wake');
+                clearTimeout(mascotSleepTimer);
+                mascotSleepTimer = setTimeout(() => setHeaderMascotState('sleep'), 60000); 
+                if (wasSleeping) {
+                    mascot._behaviorBlocked = true;
+                    setTimeout(() => { mascot._behaviorBlocked = false; }, 2000);
+                }
+                if (!randomBehaviorTimer) triggerRandomBehavior();
+            } else {
+                mascot.classList.remove('mascot-wake');
+                mascot.classList.add('mascot-sleep');
+                clearTimeout(randomBehaviorTimer);
+                randomBehaviorTimer = null;
+            }
+        }
+
+        function triggerRandomBehavior() {
+            const mascot = document.getElementById('header-mascot');
+            if (!mascot || mascot.classList.contains('mascot-sleep') || mascot.classList.contains('mascot-stunned') || mascot.classList.contains('mascot-wiggle-active') || mascot._behaviorBlocked) {
+                randomBehaviorTimer = setTimeout(triggerRandomBehavior, 5000 + Math.random() * 10000);
+                return;
+            }
+            const rand = Math.random();
+            let animClass = '';
+            let duration = 0;
+            if (rand < 0.15) { animClass = 'anim-intrigued'; duration = 2000; }
+            else if (rand < 0.3) { animClass = 'anim-judge'; duration = 2500; }
+            else if (rand < 0.4) { animClass = 'anim-surprise'; duration = 600; }
+            if (animClass) {
+                mascot.classList.add(animClass);
+                setTimeout(() => mascot.classList.remove(animClass), duration);
+            }
+            randomBehaviorTimer = setTimeout(triggerRandomBehavior, 10000 + Math.random() * 15000);
+        }
+
+        function showMascotBubble() {
+            const bubble = document.getElementById('mascot-bubble');
+            const text = document.getElementById('bubble-text');
+            const mascot = document.getElementById('header-mascot');
+            if (!mascot || mascot.classList.contains('mascot-sleep')) return;
+            text.textContent = bubbleMessages[Math.floor(Math.random() * bubbleMessages.length)];
+            bubble.classList.remove('opacity-0');
+            bubble.classList.add('opacity-100', 'translate-x-2');
+            setTimeout(() => {
+                bubble.classList.remove('opacity-100', 'translate-x-2');
+                bubble.classList.add('opacity-0');
+            }, 3500);
+        }
+
+        function updateMascots() {
+            const now = Date.now();
+            const mouseMoved = mouseX !== prevMouseX || mouseY !== prevMouseY;
+            const container = document.getElementById('header-mascot');
+            if (!container) return;
+            const isSleeping = container.classList.contains('mascot-sleep');
+            const isStunned = container.classList.contains('mascot-stunned');
+            if (isSleeping || isStunned) {
+                container.classList.remove('mascot-wiggle-active');
+                ['header-eye-l-fixed', 'header-eye-r-fixed', 'header-eye-l', 'header-eye-r'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.style.transform = 'translate(0,0)';
+                });
+            } else {
+                const rectContainer = container.getBoundingClientRect();
+                const centerX = rectContainer.left + rectContainer.width / 2;
+                const centerY = rectContainer.top + rectContainer.height / 2;
+                const distToCursor = Math.hypot(mouseX - centerX, mouseY - centerY);
+                if (distToCursor < 150 && !container._mustExit) {
+                    if (mouseMoved) container._proxStart = now;
+                    if (!container._proxStart) container._proxStart = now;
+                    const elapsed = now - container._proxStart;
+                    let timeFactor = (elapsed > 5000) ? 0 : (elapsed > 3000 ? 1 - ((elapsed - 3000) / 2000) : 1);
+                    if (timeFactor > 0) {
+                        container.classList.add('mascot-wiggle-active');
+                        let intensity = Math.pow(1 - (distToCursor / 150), 1.5) * timeFactor;
+                        container.style.setProperty('--wgl-x', (3.5 * intensity) + 'px');
+                        container.style.setProperty('--wgl-y', (1.75 * intensity) + 'px');
+                        container.style.setProperty('--wgl-r', (6 * intensity) + 'deg');
+                    } else { container.classList.remove('mascot-wiggle-active'); container._mustExit = true; }
+                } else {
+                    container._proxStart = null;
+                    if (distToCursor >= 150) container._mustExit = false;
+                    container.classList.remove('mascot-wiggle-active');
+                }
+                const svg = container.querySelector('svg');
+                const rect = svg.getBoundingClientRect();
+                
+                // Eyes tracking (both header and fixed)
+                [{id:'header-eye-l-fixed', cx:15.5}, {id:'header-eye-r-fixed', cx:24.5}, {id:'header-eye-l', cx:15.5}, {id:'header-eye-r', cx:24.5}].forEach(eye => {
+                    const el = document.getElementById(eye.id);
+                    if (!el) return;
+                    const dx = mouseX - (rect.left + (eye.cx / 40) * rect.width);
+                    const dy = mouseY - (rect.top + (18.75 / 40) * rect.height);
+                    const angle = Math.atan2(dy, dx);
+                    const dist = Math.min(1.5, Math.hypot(dx, dy) / 40);
+                    el.style.transform = `translate(${Math.cos(angle) * dist}px, ${Math.sin(angle) * dist}px)`;
+                });
+            }
+            prevMouseX = mouseX; prevMouseY = mouseY;
+            requestAnimationFrame(updateMascots);
+        }
+
+        // Init Mascot
+        document.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; });
+        document.addEventListener('mousedown', () => setHeaderMascotState('wake'));
+        setInterval(() => { if (Math.random() < 0.3) showMascotBubble(); }, 12000);
+        const mascot = document.getElementById('header-mascot');
+        if (mascot) {
+            mascot.addEventListener('click', () => {
+                mascot.classList.remove('hit-anim', 'anim-intrigued', 'anim-judge');
+                void mascot.offsetWidth;
+                mascot.classList.add('hit-anim');
+                if (mascot.classList.contains('mascot-sleep')) setHeaderMascotState('wake');
+                else if (!mascot.classList.contains('mascot-stunned')) {
+                    mascot.classList.add('mascot-stunned');
+                    setTimeout(() => mascot.classList.remove('mascot-stunned'), 3000);
+                }
+            });
+        }
+        requestAnimationFrame(updateMascots);
+    </script>    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v5.7.1-stable</div>

@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Scanner - Rentman</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        body { background-color: #000000; color: #ffffff; }
+        .bg-purple-dark { background-color: #0a0a0a; }
+        .border-purple { border-color: #9333ea; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #9333ea; border-radius: 10px; }
+
+        /* Mascot Animations */
+        @keyframes mascot-blink {
+            0%, 90%, 100% { transform: scaleY(1); transform-origin: center; }
+            95% { transform: scaleY(0.1); transform-origin: center; }
+        }
+        @keyframes mascot-look {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-1.5px); }
+            75% { transform: translateX(1.5px); }
+        }
+        @keyframes mascot-float {
+            0%, 100% { transform: translateY(0) rotate(0); }
+            25% { transform: translateY(-2px) rotate(-1deg); }
+            75% { transform: translateY(1px) rotate(1deg); }
+        }
+        @keyframes mascot-ears-wiggle {
+            0%, 100% { transform: skewX(0deg); }
+            25% { transform: skewX(-2deg); }
+            75% { transform: skewX(2deg); }
+        }
+
+        .mascot-wake svg { animation: mascot-float 4s infinite ease-in-out; }
+        .mascot-wake .mascot-ears { animation: mascot-ears-wiggle 4s infinite ease-in-out; transform-origin: bottom; transform-box: fill-box; }
+        
+        .anim-blink .mascot-eyes-group { animation: mascot-blink 4s infinite; }
+        .anim-look .mascot-eyes-group { animation: mascot-look 3s infinite ease-in-out; }
+
+        /* Zzz Animation */
+        @keyframes zzz-anim {
+            0% { transform: translate(0, 0) scale(0.5); opacity: 0; }
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { transform: translate(10px, -20px) scale(1.2); opacity: 0; }
+        }
+        .zzz { opacity: 0; font-family: 'Arial', sans-serif; font-weight: bold; fill: #475569; pointer-events: none; }
+        .mascot-sleep .zzz-1 { animation: zzz-anim 3s infinite; }
+        .mascot-sleep .zzz-2 { animation: zzz-anim 3s infinite 1s; }
+        .mascot-sleep .zzz-3 { animation: zzz-anim 3s infinite 2s; }
+
+        /* Mascot States */
+        .mascot-sleep .mascot-eyes { opacity: 0.6; transform: scaleY(0.2); transform-origin: center 18px; transition: all 1s; }
+        .mascot-wake .mascot-eyes { opacity: 1; transform: scaleY(1); transition: all 0.3s; }
+        .mascot-sleep .mascot-ears { stroke: #000000; transition: all 1s; }
+        .mascot-wake .mascot-ears { stroke: #171717; transition: all 0.3s; }
+
+        /* Eye tracking transition */
+        .eye-l, .eye-r { transition: transform 0.1s ease-out; }
+
+        /* Stunned State */
+        @keyframes spiral-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .mascot-stunned .mascot-eyes { display: none; }
+        .mascot-stunned .mascot-spirals { display: block !important; }
+        .mascot-stunned .spiral-path { transform-origin: center; transform-box: fill-box; animation: spiral-rotate 2s infinite linear; }
+        
+        /* Hit Animation */
+        @keyframes mascot-hit-anim {
+            0% { transform: scale(1); }
+            20% { transform: scale(0.8) translateY(5px); }
+            40% { transform: scale(1.1) translateY(-2px); }
+            100% { transform: scale(1); }
+        }
+        .hit-anim { animation: mascot-hit-anim 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+
+        /* Wiggle Animation */
+        @keyframes mascot-wiggle {
+            0%, 100% { transform: translate(0, 0) rotate(0); }
+            25% { transform: translate(-var(--wgl-x), var(--wgl-y)) rotate(calc(-1 * var(--wgl-r))); }
+            50% { transform: translate(var(--wgl-x), calc(-1 * var(--wgl-y))) rotate(var(--wgl-r)); }
+            75% { transform: translate(calc(-0.5 * var(--wgl-x)), calc(-1 * var(--wgl-y))) rotate(calc(-0.5 * var(--wgl-r))); }
+        }
+        .mascot-wiggle-active svg { animation: mascot-wiggle 0.1s infinite linear !important; }
+
+        /* QRCode Scanner Custom Style */
+        #reader {
+            border: none !important;
+            border-radius: 1.5rem;
+            overflow: hidden;
+        }
+        #reader video {
+            border-radius: 1.5rem;
+            object-fit: cover;
+        }
+        #reader__dashboard_section_csr button {
+            background: #9333ea !important;
+            color: white !important;
+            border: none !important;
+            padding: 0.5rem 1rem !important;
+            border-radius: 0.75rem !important;
+            font-weight: bold !important;
+            font-size: 0.75rem !important;
+            text-transform: uppercase !important;
+            cursor: pointer !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex flex-col items-center">
+    <script>
+        if (!localStorage.getItem('currentUser')) window.location.href = 'login.html';
+    </script>
+
+    <!-- Header -->
+    <div class="w-full max-w-4xl flex justify-between items-center mb-8 pl-16 md:pl-24">
+        <div class="flex items-center gap-4">
+            <div>
+                <h1 class="text-3xl font-black tracking-tighter leading-none uppercase">
+                    QR SCANNER
+                </h1>
+                <p id="userWelcome" class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Chargement profil...</p>
+            </div>
+        </div>
+        <div class="flex gap-3">
+            <a href="index.html" class="text-xs bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl transition-all border border-white/10 flex items-center">
+                ← RETOUR
+            </a>
+        </div>
+    </div>
+
+    <!-- Scanner Section -->
+    <div class="w-full max-w-xl bg-purple-dark p-6 rounded-3xl border border-white/5 shadow-2xl space-y-6">
+        <div class="flex flex-col gap-4">
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2 tracking-widest">Compte Rentman</label>
+                <select id="apiKeySelect" onchange="updateSelectedKey()" class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 focus:border-purple-500 outline-none transition-all text-sm font-bold">
+                    <option value="">Sélectionnez un compte...</option>
+                </select>
+            </div>
+            
+            <div id="reader" class="w-full aspect-square bg-black border border-white/10 rounded-3xl overflow-hidden relative">
+                <!-- Camera will be here -->
+                <div id="scannerPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-gray-600">
+                    <span class="text-4xl mb-2">📷</span>
+                    <p class="text-[10px] font-bold uppercase tracking-widest">Initialisation caméra...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="statusContainer" class="hidden p-4 rounded-2xl text-sm bg-black/50 border border-white/5">
+            <p id="status" class="text-gray-500 italic"></p>
+            <div id="corsHelp" class="hidden mt-2 text-xs text-red-400 leading-relaxed bg-red-500/10 p-3 rounded-lg border border-red-500/20">
+                ⚠️ <b>Erreur Proxy :</b> Activez le proxy dans vos réglages et validez l'accès sur <a href="https://cors-anywhere.herokuapp.com/corsdemo" target="_blank" class="underline font-bold">corsdemo</a>.
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Détails Article (Copied from inventory) -->
+    <div id="detailModal" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-4 z-[60]">
+        <div class="bg-purple-dark w-full max-w-2xl rounded-3xl border border-purple-500/30 overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-white/5 flex justify-between items-start bg-gradient-to-br from-purple-600/10 to-transparent">
+                <div>
+                    <h2 id="modalTitle" class="text-2xl font-black tracking-tighter text-white uppercase">NOM DE L'ARTICLE</h2>
+                    <p id="modalFolder" class="text-purple-400 text-xs font-bold uppercase tracking-widest mt-1">DOSSIER</p>
+                </div>
+                <button onclick="closeDetail()" class="bg-white/5 hover:bg-white/10 w-10 h-10 rounded-full flex items-center justify-center transition-all">✕</button>
+            </div>
+            <div class="p-8 overflow-y-auto custom-scrollbar">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2 tracking-widest">Code Article</label>
+                            <p id="modalCode" class="font-mono text-lg text-white bg-black/40 p-3 rounded-xl border border-white/5">CODE-001</p>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2 tracking-widest">Stock Disponible</label>
+                            <div class="flex items-baseline gap-2">
+                                <span id="modalStock" class="text-4xl font-black text-purple-500">0</span>
+                                <span class="text-gray-500 font-bold uppercase text-[10px]">Unités</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-black/40 p-6 rounded-2xl border border-white/5 space-y-4">
+                        <h3 class="text-[10px] font-bold text-purple-400 uppercase tracking-widest border-b border-purple-500/20 pb-2">Spécifications</h3>
+                        <div id="modalSpecs" class="space-y-3"></div>
+                    </div>
+                </div>
+                <div class="mt-8">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-2 tracking-widest">Remarques internes</label>
+                    <div id="modalNotes" class="text-sm text-gray-400 leading-relaxed italic bg-white/5 p-4 rounded-xl border border-white/5 min-h-[60px]">Aucune remarque.</div>
+                </div>
+            </div>
+            <div class="p-6 bg-black/50 border-t border-white/5 flex gap-3">
+                <button onclick="resumeScanning()" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-black py-3 rounded-xl transition-all shadow-lg shadow-purple-600/20 uppercase text-xs tracking-widest">
+                    Scanner suivant
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Mascot (Top Left) -->
+    <div id="header-mascot" class="fixed top-4 left-4 w-16 h-16 md:w-24 md:h-24 transition-all duration-500 mascot-sleep z-[2000] cursor-pointer">
+        <div id="mascot-bubble" class="absolute top-1/2 left-full -translate-y-1/2 ml-[9px] bg-[#0a0a0a]/90 text-purple-600 px-3 py-1.5 rounded-xl text-[10px] font-black shadow-2xl opacity-0 transition-all duration-500 pointer-events-none whitespace-nowrap z-[2001] border-2 border-purple-600">
+            <span id="bubble-text"></span>
+            <div class="absolute top-1/2 -left-1.5 -translate-y-1/2 w-3 h-3 bg-[#0a0a0a]/90 rotate-45 border-l-2 border-b-2 border-purple-600"></div>
+        </div>
+        <svg viewBox="0 0 40 40" class="w-full h-full overflow-visible">
+            <defs>
+                <radialGradient id="mascot-head-grad" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                    <stop offset="0%" stop-color="#262626" />
+                    <stop offset="100%" stop-color="#0a0a0a" />
+                </radialGradient>
+            </defs>
+            <path class="mascot-ears" d="M13 12L16 6L19 12" stroke="#171717" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <path class="mascot-ears" d="M27 12L24 6L21 12" stroke="#171717" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="10" y="12" width="20" height="16" rx="2" fill="url(#mascot-head-grad)" stroke="#000000" stroke-width="1.6"/>
+            <g class="mascot-eyes mascot-eyes-group">
+                <rect id="header-eye-l" class="eye-l" x="14" y="18" width="3" height="1.5" rx="0.5" fill="#9333ea"/>
+                <rect id="header-eye-r" class="eye-r" x="23" y="18" width="3" height="1.5" rx="0.5" fill="#9333ea"/>
+            </g>
+            <g class="zzz-group">
+                <text x="32" y="10" class="zzz zzz-1" font-size="6">Z</text>
+                <text x="35" y="5" class="zzz zzz-2" font-size="4">z</text>
+                <text x="38" y="0" class="zzz zzz-3" font-size="3">z</text>
+            </g>
+        </svg>
+    </div>
+
+    <script>
+        let currentUser = localStorage.getItem('currentUser');
+        let currentApiKey = "";
+        let useProxy = true;
+        let html5QrCode;
+        let isScanning = true;
+        let inventoryCache = null;
+
+        window.onload = () => {
+            loadProfile();
+            startScanner();
+        };
+
+        function loadProfile() {
+            let userData = JSON.parse(localStorage.getItem(`user_${currentUser}`));
+            if (!userData) return;
+
+            const welcome = document.getElementById('userWelcome');
+            welcome.textContent = `${userData.name || 'Technicien'} @ ${userData.company || 'Dashboard'}`;
+            
+            useProxy = userData.useProxy !== undefined ? userData.useProxy : true;
+
+            const select = document.getElementById('apiKeySelect');
+            select.innerHTML = '<option value="">Sélectionnez un compte...</option>';
+            if (userData.apiKeys) {
+                userData.apiKeys.forEach(key => {
+                    const opt = document.createElement('option');
+                    opt.value = key.value;
+                    opt.textContent = key.name;
+                    select.appendChild(opt);
+                });
+                if (userData.apiKeys.length > 0) {
+                    select.selectedIndex = 1;
+                    currentApiKey = userData.apiKeys[0].value.trim();
+                }
+            }
+        }
+
+        function updateSelectedKey() {
+            currentApiKey = document.getElementById('apiKeySelect').value.trim();
+        }
+
+        async function startScanner() {
+            html5QrCode = new Html5Qrcode("reader");
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+            try {
+                await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess);
+                const placeholder = document.getElementById('scannerPlaceholder');
+                if (placeholder) placeholder.classList.add('hidden');
+            } catch (err) {
+                console.error("Scanner error:", err);
+                document.getElementById('status').textContent = "Erreur caméra: " + err;
+                document.getElementById('statusContainer').classList.remove('hidden');
+            }
+        }
+
+        async function onScanSuccess(decodedText, decodedResult) {
+            if (!isScanning) return;
+            
+            console.log(`Scan result: ${decodedText}`, decodedResult);
+            isScanning = false;
+            
+            if (navigator.vibrate) navigator.vibrate(100);
+
+            const status = document.getElementById('status');
+            const statusContainer = document.getElementById('statusContainer');
+            statusContainer.classList.remove('hidden');
+            status.textContent = "Code détecté: " + decodedText;
+
+            let articleId = null;
+            let isDirectId = false;
+            
+            // 1. URL Rentman (plusieurs variantes possibles)
+            if (decodedText.includes('/equipment/')) {
+                const parts = decodedText.split('/equipment/');
+                articleId = parts[1].split('/')[0].split('?')[0];
+                isDirectId = true;
+            } else if (decodedText.includes('/items/')) {
+                const parts = decodedText.split('/items/');
+                articleId = parts[1].split('/')[0].split('?')[0];
+                isDirectId = true;
+            } 
+            // 2. ID Numérique pur (Rentman IDs sont souvent > 1000)
+            else if (!isNaN(decodedText) && decodedText.trim() !== "" && decodedText.length > 3) {
+                articleId = decodedText.trim();
+                isDirectId = true;
+            } 
+            // 3. Préfixe QR-
+            else if (decodedText.startsWith('QR-')) {
+                articleId = decodedText.replace('QR-', '');
+                isDirectId = true;
+            }
+            // 4. Tout autre texte (Code article, Serial, etc.)
+            else {
+                articleId = decodedText.trim();
+                isDirectId = false;
+            }
+
+            if (articleId) {
+                fetchArticleDetails(articleId, isDirectId, decodedText.trim());
+            } else {
+                status.textContent = "Format vide ou invalide.";
+                setTimeout(() => { isScanning = true; }, 2000);
+            }
+        }
+
+        async function fetchArticleDetails(id, isDirectId = true, originalBarcode = "") {
+            if (!currentApiKey) {
+                alert("Sélectionnez un compte Rentman pour voir les détails.");
+                isScanning = true;
+                return;
+            }
+
+            const status = document.getElementById('status');
+            status.textContent = isDirectId ? `Recherche de l'ID #${id}...` : `Recherche de "${id}"...`;
+
+            try {
+                let item = null;
+                const authHeader = currentApiKey.includes(' ') ? currentApiKey : `Bearer ${currentApiKey}`;
+
+                // 1. Recherche directe par ID si c'est un ID Rentman (Numérique > 100)
+                if (isDirectId) {
+                    try {
+                        let url = `https://api.rentman.net/equipment/${id}`;
+                        if (useProxy) url = 'https://cors-anywhere.herokuapp.com/' + url;
+
+                        const response = await fetch(url, {
+                            method: 'GET',
+                            headers: {
+                                'Authorization': authHeader,
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            item = data.data || data;
+                            console.log("Trouvé via ID direct:", item);
+                        }
+                    } catch (e) {
+                        console.warn("Échec de la recherche directe par ID.");
+                    }
+                }
+
+                // 2. Si non trouvé ou non direct, charger l'inventaire global (Cache)
+                if (!item) {
+                    if (!inventoryCache) {
+                        status.textContent = "Chargement de la base matériel...";
+                        
+                        let allData = [];
+                        let offset = 0;
+                        const limit = 1000;
+                        let hasMore = true;
+
+                        while (hasMore) {
+                            status.textContent = `Chargement matériel (${allData.length})...`;
+                            let url = `https://api.rentman.net/equipment/?limit=${limit}&offset=${offset}`;
+                            if (useProxy) url = 'https://cors-anywhere.herokuapp.com/' + url;
+
+                            const response = await fetch(url, {
+                                method: 'GET',
+                                headers: {
+                                    'Authorization': authHeader,
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }
+                            });
+
+                            if (!response.ok) {
+                                const errText = await response.text();
+                                throw new Error(`API Error ${response.status}: ${errText}`);
+                            }
+
+                            const data = await response.json();
+                            const items = Array.isArray(data) ? data : (data.data || []);
+                            allData = allData.concat(items);
+                            
+                            if (items.length < limit || allData.length >= 15000) {
+                                hasMore = false;
+                            } else {
+                                offset += limit;
+                            }
+                        }
+                        inventoryCache = allData;
+                        console.log("Inventaire chargé:", inventoryCache.length, "articles");
+                    }
+
+                    const searchStr = id.toString().toLowerCase().trim();
+                    const barcodeStr = originalBarcode.toLowerCase().trim();
+                    
+                    item = inventoryCache.find(i => 
+                        (i.id == id) ||
+                        (i.barcode && i.barcode.toLowerCase() === barcodeStr) ||
+                        (i.barcode && i.barcode.toLowerCase() === searchStr) ||
+                        (i.code && i.code.toLowerCase() === searchStr) ||
+                        (i.serial_number && i.serial_number.toLowerCase() === searchStr) ||
+                        (i.internal_reference && i.internal_reference.toLowerCase() === searchStr) ||
+                        (i.name && i.name.toLowerCase() === searchStr) ||
+                        (i.name && i.name.toLowerCase().includes(searchStr))
+                    );
+
+                    // Si toujours pas trouvé, on tente une recherche spécifique par barcode via API (cas où l'article n'était pas dans les 10000)
+                    if (!item) {
+                        try {
+                            let searchUrl = `https://api.rentman.net/equipment/?barcode=${encodeURIComponent(originalBarcode)}`;
+                            if (useProxy) searchUrl = 'https://cors-anywhere.herokuapp.com/' + searchUrl;
+                            const sResp = await fetch(searchUrl, { headers: { 'Authorization': authHeader, 'X-Requested-With': 'XMLHttpRequest' } });
+                            if (sResp.ok) {
+                                const sData = await sResp.json();
+                                const sItems = Array.isArray(sData) ? sData : (sData.data || []);
+                                if (sItems.length > 0) item = sItems[0];
+                            }
+                        } catch(e) { console.warn("Search by barcode failed"); }
+                    }
+                    
+                    // Si toujours pas trouvé, on tente de chercher dans les items physiques (numéros de série uniques)
+                    if (!item) {
+                        try {
+                            status.textContent = "Recherche dans les exemplaires physiques...";
+                            let pUrl = `https://api.rentman.net/physical-items/?barcode=${encodeURIComponent(originalBarcode)}`;
+                            if (useProxy) pUrl = 'https://cors-anywhere.herokuapp.com/' + pUrl;
+                            const pResp = await fetch(pUrl, { headers: { 'Authorization': authHeader, 'X-Requested-With': 'XMLHttpRequest' } });
+                            if (pResp.ok) {
+                                const pData = await pResp.json();
+                                const pItems = Array.isArray(pData) ? pData : (pData.data || []);
+                                if (pItems.length > 0 && pItems[0].equipment) {
+                                    // On a trouvé l'exemplaire, on récupère l'équipement associé
+                                    const eqId = pItems[0].equipment.id || pItems[0].equipment;
+                                    let eqUrl = `https://api.rentman.net/equipment/${eqId}`;
+                                    if (useProxy) eqUrl = 'https://cors-anywhere.herokuapp.com/' + eqUrl;
+                                    const eqResp = await fetch(eqUrl, { headers: { 'Authorization': authHeader, 'X-Requested-With': 'XMLHttpRequest' } });
+                                    if (eqResp.ok) {
+                                        const eqData = await eqResp.json();
+                                        item = eqData.data || eqData;
+                                        // On ajoute une info sur l'exemplaire trouvé
+                                        item.physical_info = pItems[0].serial_number || pItems[0].barcode;
+                                    }
+                                }
+                            }
+                        } catch(e) { console.warn("Physical item search failed"); }
+                    }
+                }
+
+                if (!item) throw new Error("Article non trouvé.");
+
+                openDetail(item);
+                status.textContent = "Article trouvé: " + (item.name || id);
+            } catch (err) {
+                console.error("Fetch error:", err);
+                status.textContent = "Échec: " + err.message;
+                if (err.message.includes('403') || err.message.includes('Fetch')) {
+                    document.getElementById('corsHelp').classList.remove('hidden');
+                }
+                setTimeout(() => { isScanning = true; }, 4000);
+            }
+        }
+
+        function openDetail(item) {
+            document.getElementById('modalTitle').textContent = item.name || 'N/A';
+            document.getElementById('modalCode').textContent = item.code || '-';
+            
+            // Affichage info exemplaire si trouvé via physical-item
+            if (item.physical_info) {
+                document.getElementById('modalCode').textContent += ` (SN: ${item.physical_info})`;
+            }
+            
+            const quantity = item.quantity_excluding_reservations_for_combinations ?? 
+                             item.quantity_excluding_reservations ??
+                             item.available_quantity ??
+                             item.quantity ?? 
+                             item.total_quantity ?? 0;
+            document.getElementById('modalStock').textContent = quantity;
+            
+            let folder = '-';
+            if (item.folder) {
+                folder = item.folder.name || item.folder_name || (typeof item.folder === 'string' ? item.folder : '-');
+            }
+            document.getElementById('modalFolder').textContent = folder;
+            document.getElementById('modalNotes').textContent = item.remark || item.internal_remark || "Aucune remarque interne.";
+
+            const specsContainer = document.getElementById('modalSpecs');
+            specsContainer.innerHTML = '';
+            const specs = [
+                { label: 'Poids', value: item.weight ? `${item.weight} kg` : null },
+                { label: 'Volume', value: item.volume ? `${item.volume} m³` : null },
+                { label: 'Prix', value: item.rental_price ? `${item.rental_price} CHF` : null },
+                { label: 'Puissance', value: item.power_usage ? `${item.power_usage} W` : null }
+            ];
+
+            specs.forEach(spec => {
+                if (spec.value) {
+                    const div = document.createElement('div');
+                    div.className = "flex justify-between items-center py-2 border-b border-white/5 last:border-0";
+                    div.innerHTML = `<span class="text-[10px] text-gray-500 font-bold uppercase">${spec.label}</span><span class="text-sm font-mono text-white">${spec.value}</span>`;
+                    specsContainer.appendChild(div);
+                }
+            });
+
+            document.getElementById('detailModal').classList.remove('hidden');
+        }
+
+        function closeDetail() {
+            document.getElementById('detailModal').classList.add('hidden');
+            isScanning = true;
+        }
+
+        function resumeScanning() {
+            closeDetail();
+        }
+
+        // Mascot Logic (Simplified from inventory)
+        let mouseX = 0, mouseY = 0;
+        function updateMascots() {
+            const container = document.getElementById('header-mascot');
+            if (container && !container.classList.contains('mascot-sleep')) {
+                const rect = container.querySelector('svg').getBoundingClientRect();
+                [{id:'header-eye-l', cx:15.5}, {id:'header-eye-r', cx:24.5}].forEach(eye => {
+                    const el = document.getElementById(eye.id);
+                    if (!el) return;
+                    const dx = mouseX - (rect.left + (eye.cx / 40) * rect.width);
+                    const dy = mouseY - (rect.top + (18.75 / 40) * rect.height);
+                    const angle = Math.atan2(dy, dx);
+                    const dist = Math.min(1.5, Math.hypot(dx, dy) / 40);
+                    el.style.transform = `translate(${Math.cos(angle) * dist}px, ${Math.sin(angle) * dist}px)`;
+                });
+            }
+            requestAnimationFrame(updateMascots);
+        }
+        document.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; });
+        document.addEventListener('mousedown', () => {
+            const m = document.getElementById('header-mascot');
+            m.classList.remove('mascot-sleep'); m.classList.add('mascot-wake');
+        });
+        requestAnimationFrame(updateMascots);
+    </script>
+    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v5.7.1-stable</div>
+</body>
+</html>
