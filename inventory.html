@@ -5,7 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventaire</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <script>
+        // Suppress Tailwind production warning
+        const originalWarn = console.warn;
+        console.warn = function(...args) {
+            if (typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;
+            originalWarn.apply(console, args);
+        };
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
     <style>
         body { background-color: #000000; color: #ffffff; }
         .bg-purple-dark { background-color: #0a0a0a; }
@@ -144,7 +153,7 @@
         <div id="statusContainer" class="mt-4 hidden p-3 rounded-xl text-sm bg-black/50 border border-white/5">
             <p id="status" class="text-gray-500 italic"></p>
             <div id="corsHelp" class="hidden mt-2 text-xs text-red-400 leading-relaxed bg-red-500/10 p-3 rounded-lg border border-red-500/20">
-                ⚠️ <b>Erreur Proxy :</b> Assurez-vous d'avoir activé le proxy dans vos réglages de profil et d'avoir cliqué sur <b>"Request temporary access"</b> sur <a href="https://cors-anywhere.herokuapp.com/corsdemo" target="_blank" class="underline font-bold">cette page</a>.
+                ⚠️ <b>Erreur de Connexion :</b> Impossible de joindre l'API Rentman via le proxy local. Vérifiez votre clé API et votre connexion internet.
             </div>
         </div>
     </div>
@@ -258,11 +267,11 @@
                     <h3 class="text-[10px] font-bold text-purple-400 uppercase tracking-widest border-b border-purple-500/20 pb-2">Connexion & Sécurité</h3>
                     <div class="flex items-center justify-between bg-black/40 p-4 rounded-2xl border border-white/5">
                         <div>
-                            <p class="text-sm font-bold text-white">Proxy CORS (CORS-Anywhere)</p>
-                            <p class="text-[10px] text-gray-500 uppercase tracking-tighter">Recommandé pour éviter les blocages API Rentman</p>
+                            <p class="text-sm font-bold text-white">Proxy Intégré (Local)</p>
+                            <p class="text-[10px] text-gray-500 uppercase tracking-tighter">Bypasse les restrictions CORS automatiquement</p>
                         </div>
-                        <button onclick="toggleProxy()" id="proxyBtn" class="bg-purple-600/20 text-purple-400 px-6 py-2 rounded-xl border border-purple-500/50 text-xs font-black transition-all">
-                            PROXY <span id="proxyState">ON</span>
+                        <button id="proxyBtn" class="bg-purple-600 text-white px-6 py-2 rounded-xl border border-purple-500/50 text-xs font-black transition-all cursor-default">
+                            ACTIF
                         </button>
                     </div>
                 </div>
@@ -271,7 +280,7 @@
                 <div class="space-y-4">
                     <h3 class="text-[10px] font-bold text-purple-400 uppercase tracking-widest border-b border-purple-500/20 pb-2">Comptes Rentman (Clés API)</h3>
                     
-                    <div class="bg-black/40 p-4 rounded-2xl border border-white/5 space-y-4">
+                    <div id="adminOnlyApiKeys" class="hidden bg-black/40 p-4 rounded-2xl border border-white/5 space-y-4">
                         <div class="grid grid-cols-1 gap-3">
                             <input type="text" id="newKeyName" placeholder="Nom du profil (ex: Impact Vision)" class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-purple-500 transition-all">
                             <input type="password" id="newKeyValue" placeholder="Clé API Rentman" class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-purple-500 transition-all">
@@ -304,7 +313,6 @@
         // Initialisation
         window.onload = () => {
             loadProfile();
-            updateProxyUI(); // Force UI update on load
         };
 
         function loadProfile() {
@@ -314,6 +322,12 @@
             if (!userData) {
                 welcome.textContent = `Technicien @ Dashboard`;
                 return;
+            }
+
+            const isAdmin = currentUser === 'GOOD' || userData.role === 'admin';
+            if (isAdmin) {
+                const adminSection = document.getElementById('adminOnlyApiKeys');
+                if (adminSection) adminSection.classList.remove('hidden');
             }
 
             // Migration logic for old API keys
@@ -332,11 +346,6 @@
             document.getElementById('userNameInput').value = userData.name || '';
             document.getElementById('userCompanyInput').value = userData.company || '';
             
-            // Proxy preference
-            if (userData.useProxy !== undefined) {
-                useProxy = userData.useProxy;
-            }
-
             // Load API Keys
             loadApiKeys();
         }
@@ -345,7 +354,6 @@
             let userData = JSON.parse(localStorage.getItem(`user_${currentUser}`)) || { apiKeys: [] };
             userData.name = document.getElementById('userNameInput').value;
             userData.company = document.getElementById('userCompanyInput').value;
-            userData.useProxy = useProxy;
             
             localStorage.setItem(`user_${currentUser}`, JSON.stringify(userData));
             loadProfile();
@@ -368,6 +376,8 @@
             select.innerHTML = '<option value="">Sélectionnez...</option>';
             list.innerHTML = '';
 
+            const isAdmin = currentUser === 'GOOD' || (userData && userData.role === 'admin');
+
             if (userData && userData.apiKeys) {
                 userData.apiKeys.forEach((key, index) => {
                     // Populate select
@@ -384,9 +394,11 @@
                             <span class="text-xs font-bold text-white">${key.name}</span>
                             <span class="text-[8px] text-gray-500 font-mono">CLE: ••••••••••••</span>
                         </div>
+                        ${isAdmin ? `
                         <button onclick="deleteKey(${index})" class="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white p-2 rounded-lg transition-all text-[10px] uppercase font-bold">
                             Supprimer
                         </button>
+                        ` : ''}
                     `;
                     list.appendChild(item);
                 });
@@ -394,6 +406,10 @@
         }
 
         function addApiKey() {
+            const userDataCheck = JSON.parse(localStorage.getItem(`user_${currentUser}`));
+            const isAdmin = currentUser === 'GOOD' || (userDataCheck && userDataCheck.role === 'admin');
+            if (!isAdmin) return alert("Action réservée aux administrateurs.");
+
             const name = document.getElementById('newKeyName').value;
             const value = document.getElementById('newKeyValue').value;
             if (!name || !value) return alert("Remplissez tous les champs.");
@@ -410,6 +426,10 @@
         }
 
         function deleteKey(index) {
+            const userDataCheck = JSON.parse(localStorage.getItem(`user_${currentUser}`));
+            const isAdmin = currentUser === 'GOOD' || (userDataCheck && userDataCheck.role === 'admin');
+            if (!isAdmin) return alert("Action réservée aux administrateurs.");
+
             if (!confirm("Supprimer ce compte Rentman ?")) return;
             let userData = JSON.parse(localStorage.getItem(`user_${currentUser}`));
             userData.apiKeys.splice(index, 1);
@@ -423,23 +443,6 @@
 
         function openSettings() { document.getElementById('settingsModal').classList.remove('hidden'); }
         function closeSettings() { document.getElementById('settingsModal').classList.add('hidden'); }
-
-        function toggleProxy() {
-            useProxy = !useProxy;
-            updateProxyUI();
-        }
-
-        function updateProxyUI() {
-            const btn = document.getElementById('proxyBtn');
-            const state = document.getElementById('proxyState');
-            state.textContent = useProxy ? 'ON' : 'OFF';
-            
-            if (useProxy) {
-                btn.className = 'bg-purple-600 text-white px-6 py-2 rounded-xl border border-purple-500/50 text-xs font-black transition-all';
-            } else {
-                btn.className = 'bg-white/5 text-gray-500 px-6 py-2 rounded-xl border border-white/10 text-xs font-black transition-all';
-            }
-        }
 
         function filterInventory() {
             const query = document.getElementById('searchInput').value.toLowerCase();
@@ -609,23 +612,23 @@
 
                 while (hasMore) {
                     status.textContent = `Chargement matériel (${allData.length})...`;
-                    let url = `https://api.rentman.net/equipment/?limit=${limit}&offset=${offset}`;
-                    if (useProxy) url = 'https://cors-anywhere.herokuapp.com/' + url;
+                    let targetUrl = `https://api.rentman.net/equipment/?limit=${limit}&offset=${offset}`;
+                    // Utilisation du proxy local au lieu de cors-anywhere
+                    let url = `/api/rentman/proxy?url=${encodeURIComponent(targetUrl)}&token=${encodeURIComponent(currentApiKey)}`;
 
-                    const response = await fetch(url, {
-                        method: 'GET',
-                        headers: {
-                            'Authorization': authHeader,
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    });
+                    const response = await fetch(url);
 
                     if (!response.ok) {
                         const errorText = await response.text();
-                        throw new Error(`API Error ${response.status}: ${errorText}`);
+                        throw new Error(`Proxy Error ${response.status}: ${errorText}`);
                     }
 
                     const data = await response.json();
+                    
+                    if (data.success === false) {
+                        throw new Error(data.error || "Erreur Proxy AI");
+                    }
+
                     const items = Array.isArray(data) ? data : (data.data || []);
                     allData = allData.concat(items);
                     

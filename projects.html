@@ -5,7 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Projets</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <script>
+        // Suppress Tailwind production warning
+        const originalWarn = console.warn;
+        console.warn = function(...args) {
+            if (typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;
+            originalWarn.apply(console, args);
+        };
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
     <style>
         body { background-color: #000000; color: #ffffff; }
         .bg-purple-dark { background-color: #0a0a0a; }
@@ -245,18 +254,18 @@
                     <h3 class="text-[10px] font-bold text-purple-400 uppercase tracking-widest border-b border-purple-500/20 pb-2">Connexion & Sécurité</h3>
                     <div class="flex items-center justify-between bg-black/40 p-4 rounded-2xl border border-white/5">
                         <div>
-                            <p class="text-sm font-bold text-white">Proxy CORS (CORS-Anywhere)</p>
-                            <p class="text-[10px] text-gray-500 uppercase tracking-tighter">Recommandé pour éviter les blocages API Rentman</p>
+                            <p class="text-sm font-bold text-white">Proxy Intégré (Local)</p>
+                            <p class="text-[10px] text-gray-500 uppercase tracking-tighter">Bypasse les restrictions CORS automatiquement</p>
                         </div>
-                        <button onclick="toggleProxy()" id="proxyBtn" class="bg-purple-600/20 text-purple-400 px-6 py-2 rounded-xl border border-purple-500/50 text-xs font-black transition-all">
-                            PROXY <span id="proxyState">ON</span>
+                        <button id="proxyBtn" class="bg-purple-600 text-white px-6 py-2 rounded-xl border border-purple-500/50 text-xs font-black transition-all cursor-default">
+                            ACTIF
                         </button>
                     </div>
                 </div>
 
                 <div class="space-y-4">
                     <h3 class="text-[10px] font-bold text-purple-400 uppercase tracking-widest border-b border-purple-500/20 pb-2">Comptes Rentman (Clés API)</h3>
-                    <div class="bg-black/40 p-4 rounded-2xl border border-white/5 space-y-4">
+                    <div id="adminOnlyApiKeys" class="hidden bg-black/40 p-4 rounded-2xl border border-white/5 space-y-4">
                         <div class="grid grid-cols-1 gap-3">
                             <input type="text" id="newKeyName" placeholder="Nom du profil" class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-purple-500 transition-all">
                             <input type="password" id="newKeyValue" placeholder="Clé API Rentman" class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-purple-500 transition-all">
@@ -285,7 +294,6 @@
 
         window.onload = () => {
             loadProfile();
-            updateProxyUI();
         };
 
         function loadProfile() {
@@ -293,10 +301,15 @@
             const welcome = document.getElementById('userWelcome');
             if (!userData) return;
 
+            const isAdmin = currentUser === 'GOOD' || userData.role === 'admin';
+            if (isAdmin) {
+                const adminSection = document.getElementById('adminOnlyApiKeys');
+                if (adminSection) adminSection.classList.remove('hidden');
+            }
+
             welcome.textContent = `${userData.name || 'Technicien'} @ ${userData.company || 'Impact Vision'}`;
             document.getElementById('userNameInput').value = userData.name || '';
             document.getElementById('userCompanyInput').value = userData.company || '';
-            if (userData.useProxy !== undefined) useProxy = userData.useProxy;
             loadApiKeys();
         }
 
@@ -306,6 +319,8 @@
             const list = document.getElementById('keysList');
             select.innerHTML = '<option value="">Sélectionnez...</option>';
             list.innerHTML = '';
+
+            const isAdmin = currentUser === 'GOOD' || (userData && userData.role === 'admin');
 
             if (userData && userData.apiKeys) {
                 userData.apiKeys.forEach((key, index) => {
@@ -321,9 +336,11 @@
                             <span class="text-xs font-bold text-white">${key.name}</span>
                             <span class="text-[8px] text-gray-500 font-mono">CLE: ••••••••••••</span>
                         </div>
+                        ${isAdmin ? `
                         <button onclick="deleteKey(${index})" class="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white p-2 rounded-lg transition-all text-[10px] uppercase font-bold">
                             Supprimer
                         </button>
+                        ` : ''}
                     `;
                     list.appendChild(item);
                 });
@@ -331,6 +348,10 @@
         }
 
         function addApiKey() {
+            const userDataCheck = JSON.parse(localStorage.getItem(`user_${currentUser}`));
+            const isAdmin = currentUser === 'GOOD' || (userDataCheck && userDataCheck.role === 'admin');
+            if (!isAdmin) return alert("Action réservée aux administrateurs.");
+
             const name = document.getElementById('newKeyName').value;
             const value = document.getElementById('newKeyValue').value;
             if (!name || !value) return;
@@ -343,6 +364,10 @@
         }
 
         function deleteKey(index) {
+            const userDataCheck = JSON.parse(localStorage.getItem(`user_${currentUser}`));
+            const isAdmin = currentUser === 'GOOD' || (userDataCheck && userDataCheck.role === 'admin');
+            if (!isAdmin) return alert("Action réservée aux administrateurs.");
+
             let userData = JSON.parse(localStorage.getItem(`user_${currentUser}`));
             userData.apiKeys.splice(index, 1);
             localStorage.setItem(`user_${currentUser}`, JSON.stringify(userData));
@@ -353,7 +378,6 @@
             let userData = JSON.parse(localStorage.getItem(`user_${currentUser}`)) || { apiKeys: [] };
             userData.name = document.getElementById('userNameInput').value;
             userData.company = document.getElementById('userCompanyInput').value;
-            userData.useProxy = useProxy;
             localStorage.setItem(`user_${currentUser}`, JSON.stringify(userData));
             loadProfile();
             closeSettings();
@@ -362,13 +386,6 @@
         function updateSelectedKey() { currentApiKey = document.getElementById('apiKeySelect').value; }
         function openSettings() { document.getElementById('settingsModal').classList.remove('hidden'); }
         function closeSettings() { document.getElementById('settingsModal').classList.add('hidden'); }
-        function toggleProxy() { useProxy = !useProxy; updateProxyUI(); }
-        function updateProxyUI() {
-            const btn = document.getElementById('proxyBtn');
-            const state = document.getElementById('proxyState');
-            state.textContent = useProxy ? 'ON' : 'OFF';
-            btn.className = useProxy ? 'bg-purple-600 text-white px-6 py-2 rounded-xl border border-purple-500/50 text-xs font-black transition-all' : 'bg-white/5 text-gray-500 px-6 py-2 rounded-xl border border-white/10 text-xs font-black transition-all';
-        }
 
         function getVal(obj, ...keys) {
             if (!obj) return '-';
@@ -394,17 +411,10 @@
             grid.innerHTML = `<div class="col-span-full py-20 text-center"><div class="animate-spin inline-block w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full"></div></div>`;
 
             try {
-                // Rentman API V2 ne supporte pas 'expand' comme paramètre de requête.
-                // Les dates sont maintenant dans usageperiod_start / usageperiod_end par défaut.
-                let url = 'https://api.rentman.net/projects';
-                if (useProxy) url = 'https://cors-anywhere.herokuapp.com/' + url;
+                let targetUrl = 'https://api.rentman.net/projects';
+                let url = `/api/rentman/proxy?url=${encodeURIComponent(targetUrl)}&token=${encodeURIComponent(currentApiKey)}`;
                 
-                const response = await fetch(url, {
-                    headers: { 
-                        'Authorization': currentApiKey.includes(' ') ? currentApiKey : `Bearer ${currentApiKey}`, 
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
+                const response = await fetch(url);
                 
                 if (!response.ok) {
                     const errorBody = await response.text();
@@ -422,6 +432,15 @@
                 } else if (typeof data === 'object') {
                     allProjects = Object.values(data).filter(i => typeof i === 'object' && i.id);
                 }
+                
+                // --- INJECTION DEBUG CODES ---
+                if (allProjects.length > 0) {
+                    // console.log("Projects loaded");
+                }
+                allProjects.forEach(p => {
+                    p.display_number = p.number || p.id;
+                });
+                // -----------------------------
                 
                 populateTypes(allProjects);
                 renderProjects(allProjects);
@@ -476,8 +495,9 @@
                 
                 return `
                     <div onclick="openProjectById(${p.id})" class="bg-purple-dark p-6 rounded-3xl border border-white/5 hover:border-purple-500/50 transition-all cursor-pointer group relative overflow-hidden">
-                        <div class="absolute top-0 right-0 p-4">
+                        <div class="absolute top-0 right-0 p-4 flex flex-col items-end gap-1">
                             <span class="text-[8px] font-black bg-purple-600/20 text-purple-400 px-2 py-1 rounded-md border border-purple-500/20 uppercase">${status}</span>
+                            <span class="text-[8px] font-mono text-gray-600 bg-black/40 px-1.5 py-0.5 rounded border border-white/5">N°: ${p.display_number}</span>
                         </div>
                         <div class="mb-4">
                             <p class="text-[10px] font-bold text-purple-500 uppercase tracking-widest mb-1">${client}</p>
@@ -507,19 +527,15 @@
 
             try {
                 // 1. Fetch Project Details
-                let url = `https://api.rentman.net/projects/${p.id}`;
-                if (useProxy) url = 'https://cors-anywhere.herokuapp.com/' + url;
+                let targetUrl = `https://api.rentman.net/projects/${p.id}`;
+                let url = `/api/rentman/proxy?url=${encodeURIComponent(targetUrl)}&token=${encodeURIComponent(currentApiKey)}`;
                 
-                const response = await fetch(url, {
-                    headers: { 
-                        'Authorization': currentApiKey.includes(' ') ? currentApiKey : `Bearer ${currentApiKey}`, 
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
+                const response = await fetch(url);
                 
                 if (response.ok) {
                     const detailedData = await response.json();
                     const details = detailedData.data || detailedData;
+                    console.log("!!! DETAILED PROJECT DATA !!!", details);
                     
                     let locAddr = "";
                     if (details.location) {
@@ -543,15 +559,10 @@
                 ];
 
                 let items = null;
-                for (let url of endpoints) {
-                    let fetchUrl = useProxy ? 'https://cors-anywhere.herokuapp.com/' + url : url;
+                for (let targetUrl of endpoints) {
+                    let url = `/api/rentman/proxy?url=${encodeURIComponent(targetUrl)}&token=${encodeURIComponent(currentApiKey)}`;
                     try {
-                        const res = await fetch(fetchUrl, {
-                            headers: { 
-                                'Authorization': currentApiKey.includes(' ') ? currentApiKey : `Bearer ${currentApiKey}`, 
-                                'X-Requested-With': 'XMLHttpRequest'
-                            }
-                        });
+                        const res = await fetch(url);
                         if (res.ok) {
                             const data = await res.json();
                             let potentialItems = data.data || data;
@@ -648,7 +659,8 @@
 
             const info = document.getElementById('modalInfo');
             info.innerHTML = `
-                <div class="flex justify-between py-2 border-b border-white/5"><span class="text-[10px] text-gray-500 font-bold uppercase">Numéro</span><span class="text-xs font-mono text-white">${p.project_number || p.number || '-'}</span></div>
+                <div class="flex justify-between py-2 border-b border-white/5"><span class="text-[10px] text-gray-500 font-bold uppercase">Numéro</span><span class="text-xs font-mono text-white">${p.display_number || p.number || '-'}</span></div>
+                <div class="flex justify-between py-2 border-b border-white/5"><span class="text-[10px] text-gray-500 font-bold uppercase">Référence</span><span class="text-xs font-mono text-white">${p.reference || '-'}</span></div>
                 <div class="flex justify-between py-2 border-b border-white/5"><span class="text-[10px] text-gray-500 font-bold uppercase">Lieu</span><span class="text-xs text-white">${getVal(p, 'location_name', 'location', 'venue')}</span></div>
                 <div id="venueAddressRow" class="flex justify-between py-2 border-b border-white/5 ${p.location_address ? '' : 'hidden'}"><span class="text-[10px] text-gray-500 font-bold uppercase">Adresse Lieu</span><span id="venueAddress" class="text-[10px] text-white text-right max-w-[200px]">${p.location_address || ''}</span></div>
                 <div class="flex justify-between py-2 border-b border-white/5"><span class="text-[10px] text-gray-500 font-bold uppercase">Type</span><span class="text-xs text-white">${getVal(p, 'project_type', 'type')}</span></div>
