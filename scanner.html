@@ -185,7 +185,10 @@
                         </div>
                     </div>
                     <div class="bg-black/40 p-6 rounded-2xl border border-white/5 space-y-4">
-                        <h3 class="text-[10px] font-bold text-purple-400 uppercase tracking-widest border-b border-purple-500/20 pb-2">Spécifications</h3>
+                        <h3 class="text-[10px] font-bold text-purple-400 uppercase tracking-widest border-b border-purple-500/20 pb-2">QR Code & Specs</h3>
+                        <div id="modalQrContainer" class="flex justify-center p-4 bg-white rounded-xl mb-4">
+                            <img id="modalQrCode" src="" alt="QR Code" class="w-32 h-32">
+                        </div>
                         <div id="modalSpecs" class="space-y-3"></div>
                     </div>
                 </div>
@@ -312,7 +315,15 @@
                 const parts = decodedText.split('/items/');
                 articleId = parts[1].split('/')[0].split('?')[0];
                 isDirectId = true;
-            } 
+            } else if (decodedText.includes('/equipment-view/')) {
+                const parts = decodedText.split('/equipment-view/');
+                articleId = parts[1].split('/')[0].split('?')[0];
+                isDirectId = true;
+            } else if (decodedText.includes('rentman.io/q/')) {
+                const parts = decodedText.split('/q/');
+                articleId = parts[1].split('/')[0].split('?')[0];
+                isDirectId = false; // Souvent un barcode raccourci
+            }
             // 2. ID Numérique pur (Rentman IDs sont souvent > 1000)
             else if (!isNaN(decodedText) && decodedText.trim() !== "" && decodedText.length > 3) {
                 articleId = decodedText.trim();
@@ -448,24 +459,30 @@
                     // Si toujours pas trouvé, on tente de chercher dans les items physiques (numéros de série uniques)
                     if (!item) {
                         try {
-                            status.textContent = "Recherche dans les exemplaires physiques...";
-                            let pUrl = `https://api.rentman.net/physical-items/?barcode=${encodeURIComponent(originalBarcode)}`;
-                            if (useProxy) pUrl = 'https://cors-anywhere.herokuapp.com/' + pUrl;
-                            const pResp = await fetch(pUrl, { headers: { 'Authorization': authHeader, 'X-Requested-With': 'XMLHttpRequest' } });
-                            if (pResp.ok) {
-                                const pData = await pResp.json();
-                                const pItems = Array.isArray(pData) ? pData : (pData.data || []);
-                                if (pItems.length > 0 && pItems[0].equipment) {
-                                    // On a trouvé l'exemplaire, on récupère l'équipement associé
-                                    const eqId = pItems[0].equipment.id || pItems[0].equipment;
-                                    let eqUrl = `https://api.rentman.net/equipment/${eqId}`;
-                                    if (useProxy) eqUrl = 'https://cors-anywhere.herokuapp.com/' + eqUrl;
-                                    const eqResp = await fetch(eqUrl, { headers: { 'Authorization': authHeader, 'X-Requested-With': 'XMLHttpRequest' } });
-                                    if (eqResp.ok) {
-                                        const eqData = await eqResp.json();
-                                        item = eqData.data || eqData;
-                                        // On ajoute une info sur l'exemplaire trouvé
-                                        item.physical_info = pItems[0].serial_number || pItems[0].barcode;
+                            status.textContent = "Recherche exemplaire physique...";
+                            // On tente par barcode ET par serial_number
+                            let pUrls = [
+                                `https://api.rentman.net/physical-items/?barcode=${encodeURIComponent(originalBarcode)}`,
+                                `https://api.rentman.net/physical-items/?serial_number=${encodeURIComponent(originalBarcode)}`
+                            ];
+                            
+                            for (let pUrl of pUrls) {
+                                if (useProxy) pUrl = 'https://cors-anywhere.herokuapp.com/' + pUrl;
+                                const pResp = await fetch(pUrl, { headers: { 'Authorization': authHeader, 'X-Requested-With': 'XMLHttpRequest' } });
+                                if (pResp.ok) {
+                                    const pData = await pResp.json();
+                                    const pItems = Array.isArray(pData) ? pData : (pData.data || []);
+                                    if (pItems.length > 0 && pItems[0].equipment) {
+                                        const eqId = pItems[0].equipment.id || pItems[0].equipment;
+                                        let eqUrl = `https://api.rentman.net/equipment/${eqId}`;
+                                        if (useProxy) eqUrl = 'https://cors-anywhere.herokuapp.com/' + eqUrl;
+                                        const eqResp = await fetch(eqUrl, { headers: { 'Authorization': authHeader, 'X-Requested-With': 'XMLHttpRequest' } });
+                                        if (eqResp.ok) {
+                                            const eqData = await eqResp.json();
+                                            item = eqData.data || eqData;
+                                            item.physical_info = pItems[0].serial_number || pItems[0].barcode;
+                                            break;
+                                        }
                                     }
                                 }
                             }
@@ -489,12 +506,17 @@
 
         function openDetail(item) {
             document.getElementById('modalTitle').textContent = item.name || 'N/A';
+            const barcode = item.barcode || item.code || item.id;
             document.getElementById('modalCode').textContent = item.code || '-';
             
             // Affichage info exemplaire si trouvé via physical-item
             if (item.physical_info) {
                 document.getElementById('modalCode').textContent += ` (SN: ${item.physical_info})`;
             }
+
+            // Génération QR Code (via API externe gratuite)
+            const qrImg = document.getElementById('modalQrCode');
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(barcode)}`;
             
             const quantity = item.quantity_excluding_reservations_for_combinations ?? 
                              item.quantity_excluding_reservations ??
@@ -513,6 +535,7 @@
             const specsContainer = document.getElementById('modalSpecs');
             specsContainer.innerHTML = '';
             const specs = [
+                { label: 'Barcode', value: item.barcode || item.code },
                 { label: 'Poids', value: item.weight ? `${item.weight} kg` : null },
                 { label: 'Volume', value: item.volume ? `${item.volume} m³` : null },
                 { label: 'Prix', value: item.rental_price ? `${item.rental_price} CHF` : null },

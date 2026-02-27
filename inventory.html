@@ -163,6 +163,7 @@
                         <th class="px-6 py-4">Matériel</th>
                         <th class="px-6 py-4">Dossier</th>
                         <th class="px-6 py-4">Stock</th>
+                        <th class="px-6 py-4">Barcode</th>
                         <th class="px-6 py-4">Code</th>
                     </tr>
                 </thead>
@@ -205,7 +206,10 @@
 
                     <!-- Colonne Droite (Specs) -->
                     <div class="bg-black/40 p-6 rounded-2xl border border-white/5 space-y-4">
-                        <h3 class="text-[10px] font-bold text-purple-400 uppercase tracking-widest border-b border-purple-500/20 pb-2">Spécifications</h3>
+                        <h3 class="text-[10px] font-bold text-purple-400 uppercase tracking-widest border-b border-purple-500/20 pb-2">QR Code & Spécifications</h3>
+                        <div id="modalQrContainer" class="flex justify-center p-4 bg-white rounded-xl mb-4">
+                            <img id="modalQrCode" src="" alt="QR Code" class="w-32 h-32">
+                        </div>
                         <div id="modalSpecs" class="space-y-3">
                             <!-- Dynamic Content -->
                         </div>
@@ -529,6 +533,7 @@
                     <td class="px-6 py-4 font-bold text-white group-hover:text-purple-400 transition-colors">${name}</td>
                     <td class="px-6 py-4 text-gray-400 text-xs">${folder}</td>
                     <td class="px-6 py-4"><span class="bg-purple-900/30 text-purple-400 px-2 py-1 rounded text-xs font-black border border-purple-500/20">${quantity}</span></td>
+                    <td class="px-6 py-4 text-gray-500 font-mono text-[10px]">${item.barcode || '-'}</td>
                     <td class="px-6 py-4 text-gray-500 font-mono text-[10px]">${code}</td>
                 `;
                 inventoryList.appendChild(row);
@@ -539,6 +544,10 @@
             document.getElementById('modalTitle').textContent = item.name || 'N/A';
             document.getElementById('modalCode').textContent = item.code || '-';
             
+            const barcode = item.barcode || item.code || item.id;
+            const qrImg = document.getElementById('modalQrCode');
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(barcode)}`;
+
             const quantity = item.quantity_excluding_reservations_for_combinations ?? 
                              item.quantity_excluding_reservations ??
                              item.available_quantity ??
@@ -560,6 +569,7 @@
             specsContainer.innerHTML = '';
             
             const specs = [
+                { label: 'Barcode', value: item.barcode || item.code },
                 { label: 'Poids', value: item.weight ? `${item.weight} kg` : null },
                 { label: 'Volume', value: item.volume ? `${item.volume} m³` : null },
                 { label: 'Prix Location', value: item.rental_price ? `${item.rental_price} CHF` : null },
