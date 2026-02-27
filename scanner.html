@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QR Scanner - Rentman</title>
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
@@ -517,6 +517,17 @@
             }
         }
 
+        function getFolderFromCode(item) {
+            if (item.code && item.code.includes('-')) {
+                const prefix = item.code.split('-')[0].trim().toUpperCase();
+                if (prefix && isNaN(prefix)) return prefix;
+            }
+            if (item.folder) {
+                return item.folder.name || item.folder_name || (typeof item.folder === 'string' ? item.folder : '-');
+            }
+            return '-';
+        }
+
         function openDetail(item) {
             document.getElementById('modalTitle').textContent = item.name || 'N/A';
             const barcode = item.barcode || item.code || item.id;
@@ -538,10 +549,7 @@
                              item.total_quantity ?? 0;
             document.getElementById('modalStock').textContent = quantity;
             
-            let folder = '-';
-            if (item.folder) {
-                folder = item.folder.name || item.folder_name || (typeof item.folder === 'string' ? item.folder : '-');
-            }
+            const folder = getFolderFromCode(item);
             document.getElementById('modalFolder').textContent = folder;
             document.getElementById('modalNotes').textContent = item.remark || item.internal_remark || "Aucune remarque interne.";
 
@@ -601,6 +609,6 @@
         });
         requestAnimationFrame(updateMascots);
     </script>
-    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v5.8.0-stable</div>
+    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v6.1.0-admin</div>
 </body>
 </html>

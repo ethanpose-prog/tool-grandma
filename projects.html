@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <title>Projets</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #000000; color: #ffffff; }
@@ -101,19 +101,14 @@
     </script>
 
     <!-- Header -->
-    <div class="max-w-6xl mx-auto flex justify-between items-center mb-8 pl-16 md:pl-24">
-        <div class="flex items-center gap-4">
-            <div>
-                <h1 class="text-3xl font-black tracking-tighter leading-none uppercase">
-                    DASHBOARD
-                </h1>
-                <p id="userWelcome" class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Chargement profil...</p>
-            </div>
+    <div class="max-w-6xl mx-auto flex flex-col items-center mb-8">
+        <div class="text-center">
+            <h1 class="text-3xl font-black tracking-tighter leading-none uppercase">
+                PROJETS
+            </h1>
+            <p id="userWelcome" class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Chargement profil...</p>
         </div>
-        <div class="flex gap-3">
-            <a href="/chat" class="bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-xl transition-all border border-white/10 text-xs font-bold flex items-center gap-2">
-                🤖 RETOUR AU CHAT
-            </a>
+        <div class="flex gap-3 mt-6">
             <button onclick="openSettings()" class="bg-purple-600/10 hover:bg-purple-600/20 text-purple-400 px-4 py-2 rounded-xl transition-all border border-purple-500/20 text-xs font-bold flex items-center gap-2">
                 👤 PROFIL & API
             </button>
@@ -539,40 +534,39 @@
                 }
 
                 // 2. Fetch Project Equipment
-                // Note: Rentman API v2 utilizes different endpoints for equipment.
-                // We try 'project-equipment-items?project=ID' (standard v2) first, then fallbacks.
-                let eqUrl = `https://api.rentman.net/project-equipment-items?project=${p.id}`;
-                if (useProxy) eqUrl = 'https://cors-anywhere.herokuapp.com/' + eqUrl;
+                // Try several common Rentman V2 endpoints for project equipment
+                const endpoints = [
+                    `https://api.rentman.net/project-equipment?project=${p.id}&expand=equipment`,
+                    `https://api.rentman.net/project-equipments?project=${p.id}&expand=equipment`,
+                    `https://api.rentman.net/projects/${p.id}/equipment?expand=equipment`,
+                    `https://api.rentman.net/project-equipment-items?project=${p.id}&expand=equipment`
+                ];
 
-                const eqResponse = await fetch(eqUrl, {
-                    headers: { 
-                        'Authorization': currentApiKey.includes(' ') ? currentApiKey : `Bearer ${currentApiKey}`, 
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
+                let items = null;
+                for (let url of endpoints) {
+                    let fetchUrl = useProxy ? 'https://cors-anywhere.herokuapp.com/' + url : url;
+                    try {
+                        const res = await fetch(fetchUrl, {
+                            headers: { 
+                                'Authorization': currentApiKey.includes(' ') ? currentApiKey : `Bearer ${currentApiKey}`, 
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            let potentialItems = data.data || data;
+                            if (potentialItems && (Array.isArray(potentialItems) || typeof potentialItems === 'object')) {
+                                items = Array.isArray(potentialItems) ? potentialItems : Object.values(potentialItems).filter(i => typeof i === 'object');
+                                if (items.length > 0) break;
+                            }
+                        }
+                    } catch (e) { console.warn(`Failed endpoint ${url}`, e); }
+                }
 
-                if (eqResponse.ok) {
-                    const eqData = await eqResponse.json();
-                    const items = eqData.data || eqData;
+                if (items) {
                     renderEquipment(items);
                 } else {
-                    // Fallback to project-specific paths if top-level filter fails
-                    let eqAltUrl = `https://api.rentman.net/projects/${p.id}/equipment`;
-                    if (useProxy) eqAltUrl = 'https://cors-anywhere.herokuapp.com/' + eqAltUrl;
-                    
-                    const eqAltRes = await fetch(eqAltUrl, {
-                        headers: { 
-                            'Authorization': currentApiKey.includes(' ') ? currentApiKey : `Bearer ${currentApiKey}`, 
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    });
-
-                    if (eqAltRes.ok) {
-                        const eqAltData = await eqAltRes.json();
-                        renderEquipment(eqAltData.data || eqAltData);
-                    } else {
-                        document.getElementById('modalEquipment').innerHTML = '<div class="p-4 text-center text-red-500/50 text-xs italic">Impossible de charger les équipements (Erreur API).</div>';
-                    }
+                    document.getElementById('modalEquipment').innerHTML = '<div class="p-4 text-center text-red-500/50 text-xs italic">Impossible de charger les équipements (Erreur API).</div>';
                 }
 
             } catch (error) {
@@ -581,33 +575,53 @@
             }
         }
 
+        function getFolderFromCode(item) {
+            const code = item.code || item.item_code || (item.equipment ? item.equipment.code : '');
+            if (code && code.includes('-')) {
+                const prefix = code.split('-')[0].trim().toUpperCase();
+                if (prefix && isNaN(prefix)) return prefix;
+            }
+            if (item.folder) {
+                return item.folder.name || item.folder_name || (typeof item.folder === 'string' ? item.folder : '-');
+            }
+            return '-';
+        }
+
         function renderEquipment(items) {
             const container = document.getElementById('modalEquipment');
-            if (!items || items.length === 0) {
+            console.log("Equipment items received:", items);
+
+            if (!items || !Array.isArray(items) || items.length === 0) {
                 container.innerHTML = '<div class="p-4 text-center text-gray-600 text-xs italic">Aucun équipement lié à ce projet.</div>';
                 return;
             }
 
             let html = '<div class="overflow-x-auto"><table class="w-full text-left text-xs">';
-            html += '<thead class="bg-white/5 text-[10px] font-bold text-gray-500 uppercase tracking-widest border-b border-white/5"><tr><th class="px-4 py-3">Article</th><th class="px-4 py-3 text-right">Qté</th></tr></thead>';
+            html += '<thead class="bg-white/5 text-[10px] font-bold text-gray-500 uppercase tracking-widest border-b border-white/5"><tr><th class="px-4 py-3">Article</th><th class="px-4 py-3">Dossier</th><th class="px-4 py-3 text-right">Qté</th></tr></thead>';
             html += '<tbody class="divide-y divide-white/5">';
             
             items.forEach(item => {
-            // Robust mapping for Rentman V2 equipment fields
-            const name = item.name || item.item_name || (item.equipment ? item.equipment.name : 'Article inconnu');
-            const code = item.code || item.item_code || (item.equipment ? item.equipment.code : '');
-            const quantity = item.quantity || item.amount || 0;
+                if (!item || typeof item !== 'object') return;
+                // Rentman V2 mapping
+                const eq = item.equipment || {};
+                const name = item.name || item.item_name || eq.name || 'Article inconnu';
+                const code = item.code || item.item_code || eq.code || '-';
+                const quantity = item.quantity || item.amount || 0;
+                const folder = getFolderFromCode(item);
 
-            html += `
-                <tr class="hover:bg-white/5 transition-colors">
-                    <td class="px-4 py-3">
-                        <div class="font-bold text-white uppercase">${name}</div>
-                        <div class="text-[9px] text-gray-500 font-mono">${code}</div>
-                    </td>
-                    <td class="px-4 py-3 text-right font-black text-purple-400">${quantity}</td>
-                </tr>
-            `;
-        });
+                html += `
+                    <tr class="hover:bg-white/5 transition-colors">
+                        <td class="px-4 py-3">
+                            <div class="font-bold text-white uppercase">${name}</div>
+                            <div class="text-[9px] text-gray-500 font-mono">${code}</div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="bg-white/5 px-2 py-0.5 rounded border border-white/10 text-[9px] text-gray-400 uppercase font-bold">${folder}</span>
+                        </td>
+                        <td class="px-4 py-3 text-right font-black text-purple-400">${quantity}</td>
+                    </tr>
+                `;
+            });
 
             html += '</tbody></table></div>';
             container.innerHTML = html;
@@ -815,4 +829,9 @@
             });
         }
         requestAnimationFrame(updateMascots);
-    </script>    <div class="fixed bottom-4 left-4 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v5.7.1-stable</div>
+    </script>
+    <!-- Dashboard Link -->
+    <a href="index.html" class="fixed bottom-4 left-4 z-[1001] px-4 py-3 bg-[#0a0a0a]/90 backdrop-blur text-purple-400 border border-purple-400/30 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-purple-600 hover:text-white transition-all flex items-center gap-2 group shadow-2xl active:scale-95">
+        <span>Dashboard</span>
+    </a>
+    <div class="fixed bottom-4 right-20 text-[10px] font-mono text-gray-700 uppercase tracking-widest opacity-50">v6.1.0-admin</div>
