@@ -1,20 +1,22 @@
 return function()
-    -- Utilisation de l'API gma3 pour l'input
-    local input = gma3.gui.TextInput("Picoclaw 🦞", "Que veux-tu faire ? (ex: Patch 10 spots)")
+    -- On utilise les fonctions globales de la MA3 (plus stables)
+    Printf("Picoclaw AI: Tentative d'ouverture de la fenêtre...")
+    
+    local title = "Picoclaw AI 🦞"
+    local defaultText = "Tapez une commande (ex: Fixture 1 At Full)"
+    
+    -- Ouvre la fenêtre de saisie de texte
+    local input = TextInput(title, defaultText)
     
     if input ~= nil and input ~= "" then
-        gma3.echo("Picoclaw AI: Analyzing request: " .. input)
+        Echo("Picoclaw AI: Commande reçue -> " .. input)
         
-        -- Commande test
-        gma3.cmd("Fixture 1 Thru 10 At Full")
+        -- On exécute la commande dans la console
+        Cmd(input)
         
-        -- Popup de confirmation
-        gma3.gui.MessageBox({
-            title = "Picoclaw AI",
-            message = "J'ai allumé les fixtures 1 à 10 pour toi !",
-            commands = {{value = 1, name = "Merci 🦞"}}
-        })
+        -- Petite confirmation visuelle
+        Confirm("Picoclaw AI", "Commande exécutée avec succès ! 🦞")
     else
-        gma3.echo("Picoclaw AI: Operation cancelled.")
+        Echo("Picoclaw AI: Annulé ou vide.")
     end
 end
