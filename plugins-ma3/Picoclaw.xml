@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<GMA3 DataVersion="2.0.2.0">
+<GMA3 DataVersion="2.1.1.2">
     <Plugin Name="Picoclaw AI" Author="Ethan - Impact Vision">
-        <Component Index="1" FileName="Picoclaw.lua" />
+        <LuaComponent FileName="Picoclaw.lua" />
     </Plugin>
 </GMA3>
