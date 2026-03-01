@@ -1,36 +1,28 @@
 <GMA3 DataVersion="2.1.1.2">
-	<Plugin Name="ClawChat" Guid="73 63 6c 61 77 2d 63 68 61 74 2d 76 31 31 37 00">
+	<Plugin Name="ClawChat" Guid="73 63 6c 61 77 2d 63 68 61 74 2d 76 31 31 38 00">
 		<ComponentLua Name="Main" Installed="Yes">
 			<Code>
 				<![CDATA[
-local function Main()
-    local version = "v1.1.7"
-    Printf("========================================")
-    Printf("Picoclaw Chat Plugin " .. version .. " loaded")
-    Printf("========================================")
+return function()
+    local version = "v1.1.8"
+    Echo("========================================")
+    Echo("Picoclaw Chat Plugin " .. version .. " active")
     
-    local response = Confirm("Picoclaw 🦞", "Voulez-vous envoyer un message à Ethan via Picoclaw ?")
+    local response = Confirm("Picoclaw 🦞", "Voulez-vous envoyer un message ?")
     
     if response then
-        local msg = TextInput("Message pour Ethan", "Tapez votre message technique ici...")
+        local msg = TextInput("Message", "Tapez ici...")
         if msg and msg ~= "" then
-            Printf("Picoclaw: Envoi du message... [" .. msg .. "]")
-            -- Simulation d'envoi (le vrai envoi passera par une API externe plus tard)
+            Echo("Picoclaw: Message reçu: " .. msg)
             MessageBox({
-                title = "Succès",
-                message = "Message envoyé à Picoclaw avec succès !",
+                title = "Envoyé",
+                message = "Message transmis avec succès !",
                 commands = {{value = 1, name = "OK"}},
                 backColor = "0.2, 0.5, 0.2, 1"
             })
-        else
-            Printf("Picoclaw: Envoi annulé (message vide)")
         end
-    else
-        Printf("Picoclaw: Opération annulée")
     end
 end
-
-return Main
 				]]>
 			</Code>
 		</ComponentLua>
