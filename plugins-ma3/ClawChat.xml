@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <GMA3>
-    <Plugin Name="ClawChat" Author="Picoclaw" Version="1.1.0">
+    <Plugin Name="ClawChat" Author="Picoclaw" Version="1.1.1">
         <Component Name="Main" LuaCode="-- ClawChat for grandMA3
--- Version: 1.1.0 (Sync with Bridge)
+-- Version: 1.1.1 (Simplified Path)
 -- Author: Picoclaw 🦞
 
 local pluginName = &quot;ClawChat&quot;
 local overlayName = &quot;ClawChatOverlay&quot;
-local requestFile = GetRootPath() .. &quot;/plugins/ClawChat/user_question.json&quot;
-local responseFile = GetRootPath() .. &quot;/plugins/ClawChat/ai_response.json&quot;
+local requestFile = GetRootPath() .. &quot;/plugins/user_question.json&quot;
+local responseFile = GetRootPath() .. &quot;/plugins/ai_response.json&quot;
 
 local messages = {}
 local uiElements = {}
@@ -103,7 +103,7 @@ local function createUI()
         end
     end)
     
-    addMessage(&quot;SYSTEM&quot;, &quot;ClawChat v1.1 Connecté.&quot;)
+    addMessage(&quot;SYSTEM&quot;, &quot;ClawChat v1.1.1 Connecté.&quot;)
 end
 
 local function main()
@@ -116,6 +116,4 @@ local function main()
 end
 
 return main
-" />
-    </Plugin>
-</GMA3>
+" />,path:
