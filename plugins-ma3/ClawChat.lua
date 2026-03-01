@@ -1,36 +1,20 @@
--- ClawChat v1.1.4 for grandMA3
+-- ClawChat v1.1.5 for grandMA3
 -- Assistant: Picoclaw 🦞
 
-local function createUI()
-    local ui = GetWindowManager().DisplayPool[1].ScreenOverlay:Append("BaseInput")
-    ui.Name = "ClawChat"
-    ui.H = 400
-    ui.W = 600
-    ui.Columns = 1
-    ui.Rows = 2
-
-    local title = ui:Append("TitleBar")
-    title.Text = "Picoclaw Chat 🦞"
-
-    local input = ui:Append("TextInput")
-    input.Text = "Tapez votre message ici..."
-    input.EnforceInput = true
-
-    local sendBtn = ui:Append("Button")
-    sendBtn.Text = "ENVOYER"
-    sendBtn.OnClick = function()
-        local msg = input.Text
-        Echo("Picoclaw: Message reçu -> " .. msg)
-        -- Logique de traitement ici
-        input.Text = ""
-    end
-
-    ui:Show()
-end
-
 local function main()
-    Echo("ClawChat: Initialisation...")
-    createUI()
+    Printf("--------------------------------------")
+    Printf("ClawChat v1.1.5 - Initialisation...")
+    
+    -- Utilisation de TextInput (Popup natif MA3)
+    local msg = TextInput("Picoclaw Chat 🦞", "Tapez votre message pour l'IA...")
+    
+    if msg and msg ~= "" then
+        Printf("Picoclaw: Message reçu -> " .. msg)
+        -- Ici on pourra ajouter l'envoi vers l'API plus tard
+        Confirm("Message envoyé", "Votre message '" .. msg .. "' a été transmis à Picoclaw.")
+    else
+        Printf("ClawChat: Annulé ou message vide.")
+    end
 end
 
 return main
