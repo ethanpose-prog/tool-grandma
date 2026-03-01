@@ -1,40 +1,42 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <GMA3>
-    <Plugin Name="ClawChat" Author="Picoclaw" Version="1.0.0">
+    <Plugin Name="ClawChat" Author="Picoclaw" Version="1.1.0">
         <Component Name="Main" LuaCode="-- ClawChat for grandMA3
--- Version: 1.0.0
--- Author: Picoclaw 🦞 (Ethan - Impact Vision)
--- Theme: Black &amp; Purple
+-- Version: 1.1.0 (Sync with Bridge)
+-- Author: Picoclaw 🦞
 
 local pluginName = &quot;ClawChat&quot;
 local overlayName = &quot;ClawChatOverlay&quot;
-local requestFile = GetRootPath() .. &quot;/plugins/ClawChat/request.json&quot;
-local responseFile = GetRootPath() .. &quot;/plugins/ClawChat/response.json&quot;
+local requestFile = GetRootPath() .. &quot;/plugins/ClawChat/user_question.json&quot;
+local responseFile = GetRootPath() .. &quot;/plugins/ClawChat/ai_response.json&quot;
 
 local messages = {}
 local uiElements = {}
+local lastResponseTime = 0
 
--- Helper to write JSON (minimalist)
-local function writeJson(path, data)
-    local file = io.open(path, &quot;w&quot;)
+-- Helper to write JSON 
+local function writeRequest(text)
+    local file = io.open(requestFile, &quot;w&quot;)
     if file then
-        file:write(&#x27;{&quot;text&quot;: &quot;&#x27; .. data:gsub(&#x27;&quot;&#x27;, &#x27;\\&quot;&#x27;) .. &#x27;&quot;}&#x27;)
+        local ts = os.time()
+        file:write(string.format(&#x27;{&quot;question&quot;: &quot;%s&quot;, &quot;timestamp&quot;: %d}&#x27;, text:gsub(&#x27;&quot;&#x27;, &#x27;\\&quot;&#x27;), ts))
         file:close()
         return true
     end
     return false
 end
 
--- Helper to read JSON (minimalist)
-local function readJson(path)
-    local file = io.open(path, &quot;r&quot;)
+-- Helper to read JSON
+local function readResponse()
+    local file = io.open(responseFile, &quot;r&quot;)
     if file then
         local content = file:read(&quot;*all&quot;)
         file:close()
-        -- Simple extraction of &quot;text&quot; field
-        local text = content:match(&#x27;&quot;text&quot;:%s*&quot;([^&quot;]+)&quot;&#x27;)
-        if text then
-            os.remove(path) -- Delete after reading
+        local text = content:match(&#x27;&quot;response&quot;:%s*&quot;([^&quot;]+)&quot;&#x27;)
+        local ts = tonumber(content:match(&#x27;&quot;timestamp&quot;:%s*(%d+)&#x27;))
+        
+        if text and ts and ts &gt; lastResponseTime then
+            lastResponseTime = ts
             return text
         end
     end
@@ -50,8 +52,6 @@ local function addMessage(sender, text)
         label.TextColor = (sender == &quot;ME&quot;) and &quot;Global.White&quot; or &quot;Global.Fuchsia&quot;
         label.BackColor = &quot;Global.Transparent&quot;
         label.Height = 30
-        
-        -- Auto-scroll to bottom
         uiElements.scrollArea.ScrollV = 10000 
     end
 end
@@ -59,32 +59,22 @@ end
 local function closeUI()
     local display = GetDisplayByIndex(0)
     local overlay = display:Find(overlayName)
-    if overlay then
-        overlay:Parent():Remove(overlay:Index())
-    end
+    if overlay then overlay:Parent():Remove(overlay:Index()) end
 end
 
 local function createUI()
-    closeUI() -- Clean start
-    
+    closeUI()
     local display = GetDisplayByIndex(0)
     local mainOverlay = display:GetMainOverlay()
     local overlay = mainOverlay:Append(&quot;UIElement&quot;)
     overlay.Name = overlayName
-    overlay.H = 500
-    overlay.W = 400
-    overlay.X = 100
-    overlay.Y = 100
+    overlay.H, overlay.W, overlay.X, overlay.Y = 500, 400, 100, 100
     overlay.BackColor = &quot;Global.Black&quot;
     
-    -- Main Grid
     local grid = overlay:Append(&quot;UILayoutGrid&quot;)
-    grid.Columns = 1
-    grid.Rows = 2
-    grid[1].Height = &quot;80%&quot;
-    grid[2].Height = &quot;20%&quot;
+    grid.Columns, grid.Rows = 1, 2
+    grid[1].Height, grid[2].Height = &quot;80%&quot;, &quot;20%&quot;
     
-    -- Chat History (Scroll Area)
     local scrollArea = grid[1]:Append(&quot;UIScrollArea&quot;)
     scrollArea.BackColor = &quot;Global.DarkGrey&quot;
     uiElements.scrollArea = scrollArea
@@ -93,51 +83,35 @@ local function createUI()
     scrollContent.Columns = 1
     uiElements.scrollContent = scrollContent
     
-    -- Bottom Bar (Input + Send)
     local bottomGrid = grid[2]:Append(&quot;UILayoutGrid&quot;)
-    bottomGrid.Columns = 2
-    bottomGrid.Rows = 1
-    bottomGrid[1].Width = &quot;80%&quot;
-    bottomGrid[2].Width = &quot;20%&quot;
+    bottomGrid.Columns, bottomGrid.Rows = 2, 1
+    bottomGrid[1].Width, bottomGrid[2].Width = &quot;80%&quot;, &quot;20%&quot;
     
     local input = bottomGrid[1]:Append(&quot;UIInput&quot;)
-    input.Text = &quot;&quot;
-    input.BackColor = &quot;Global.Black&quot;
-    input.TextColor = &quot;Global.White&quot;
+    input.Text, input.BackColor, input.TextColor = &quot;&quot;, &quot;Global.Black&quot;, &quot;Global.White&quot;
     uiElements.input = input
     
     local sendBtn = bottomGrid[2]:Append(&quot;UITextButton&quot;)
-    sendBtn.Text = &quot;SEND&quot;
-    sendBtn.BackColor = &quot;Global.Purple&quot;
-    sendBtn.TextColor = &quot;Global.White&quot;
+    sendBtn.Text, sendBtn.BackColor, sendBtn.TextColor = &quot;SEND&quot;, &quot;Global.Purple&quot;, &quot;Global.White&quot;
     
-    -- Interaction
     sendBtn:SetSignalFunction(&quot;OnClick&quot;, function()
         local text = input.Text
         if text ~= &quot;&quot; then
             addMessage(&quot;ME&quot;, text)
-            writeJson(requestFile, text)
+            writeRequest(text)
             input.Text = &quot;&quot;
         end
     end)
     
-    addMessage(&quot;SYSTEM&quot;, &quot;ClawChat Connecté. Pose ta question.&quot;)
+    addMessage(&quot;SYSTEM&quot;, &quot;ClawChat v1.1 Connecté.&quot;)
 end
 
 local function main()
-    -- Create directory for communication if not exists
-    local dir = GetRootPath() .. &quot;/plugins/ClawChat&quot;
-    os.execute(&quot;mkdir -p &quot; .. dir)
-
     createUI()
-    
-    -- Main Loop for Polling
     while true do
-        local response = readJson(responseFile)
-        if response then
-            addMessage(&quot;CLAW&quot;, response)
-        end
-        coroutine.yield(0.5) -- Poll every 500ms
+        local response = readResponse()
+        if response then addMessage(&quot;CLAW&quot;, response) end
+        coroutine.yield(0.5)
     end
 end
 
