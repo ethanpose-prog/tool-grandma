@@ -1,56 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <GMA3>
-    <Plugin Name="ClawChat" Author="Picoclaw" Version="1.1.1">
+    <Plugin Name="ClawChat" Author="Picoclaw" Version="1.1.2">
         <Component Name="Main" LuaCode="-- ClawChat for grandMA3
--- Version: 1.1.1 (Simplified Path)
+-- Version: 1.1.2 (Debug Mode)
 -- Author: Picoclaw 🦞
 
-local pluginName = &quot;ClawChat&quot;
 local overlayName = &quot;ClawChatOverlay&quot;
-local requestFile = GetRootPath() .. &quot;/plugins/user_question.json&quot;
-local responseFile = GetRootPath() .. &quot;/plugins/ai_response.json&quot;
+-- On utilise un chemin relatif direct pour éviter les soucis de RootPath
+local requestFile = &quot;./user_question.json&quot;
+local responseFile = &quot;./ai_response.json&quot;
 
 local messages = {}
 local uiElements = {}
 local lastResponseTime = 0
 
--- Helper to write JSON 
-local function writeRequest(text)
-    local file = io.open(requestFile, &quot;w&quot;)
-    if file then
-        local ts = os.time()
-        file:write(string.format(&#x27;{&quot;question&quot;: &quot;%s&quot;, &quot;timestamp&quot;: %d}&#x27;, text:gsub(&#x27;&quot;&#x27;, &#x27;\\&quot;&#x27;), ts))
-        file:close()
-        return true
-    end
-    return false
-end
-
--- Helper to read JSON
-local function readResponse()
-    local file = io.open(responseFile, &quot;r&quot;)
-    if file then
-        local content = file:read(&quot;*all&quot;)
-        file:close()
-        local text = content:match(&#x27;&quot;response&quot;:%s*&quot;([^&quot;]+)&quot;&#x27;)
-        local ts = tonumber(content:match(&#x27;&quot;timestamp&quot;:%s*(%d+)&#x27;))
-        
-        if text and ts and ts &gt; lastResponseTime then
-            lastResponseTime = ts
-            return text
-        end
-    end
-    return nil
-end
-
 local function addMessage(sender, text)
+    if not text then return end
     table.insert(messages, {sender = sender, text = text})
     if uiElements.scrollContent then
         local label = uiElements.scrollContent:Append(&quot;UILabel&quot;)
         label.Text = &quot;[&quot; .. sender .. &quot;] &quot; .. text
         label.TextAlignH = &quot;Left&quot;
         label.TextColor = (sender == &quot;ME&quot;) and &quot;Global.White&quot; or &quot;Global.Fuchsia&quot;
-        label.BackColor = &quot;Global.Transparent&quot;
         label.Height = 30
         uiElements.scrollArea.ScrollV = 10000 
     end
@@ -58,14 +29,20 @@ end
 
 local function closeUI()
     local display = GetDisplayByIndex(0)
-    local overlay = display:Find(overlayName)
-    if overlay then overlay:Parent():Remove(overlay:Index()) end
+    local mainOverlay = display:GetMainOverlay()
+    local overlay = mainOverlay:Find(overlayName)
+    if overlay then 
+        mainOverlay:Remove(overlay.Index)
+        Printf(&quot;ClawChat: Ancienne interface fermée.&quot;)
+    end
 end
 
 local function createUI()
+    Printf(&quot;ClawChat: Création de l'interface...&quot;)
     closeUI()
     local display = GetDisplayByIndex(0)
     local mainOverlay = display:GetMainOverlay()
+    
     local overlay = mainOverlay:Append(&quot;UIElement&quot;)
     overlay.Name = overlayName
     overlay.H, overlay.W, overlay.X, overlay.Y = 500, 400, 100, 100
@@ -76,7 +53,6 @@ local function createUI()
     grid[1].Height, grid[2].Height = &quot;80%&quot;, &quot;20%&quot;
     
     local scrollArea = grid[1]:Append(&quot;UIScrollArea&quot;)
-    scrollArea.BackColor = &quot;Global.DarkGrey&quot;
     uiElements.scrollArea = scrollArea
     
     local scrollContent = scrollArea:Append(&quot;UILayoutGrid&quot;)
@@ -88,32 +64,51 @@ local function createUI()
     bottomGrid[1].Width, bottomGrid[2].Width = &quot;80%&quot;, &quot;20%&quot;
     
     local input = bottomGrid[1]:Append(&quot;UIInput&quot;)
-    input.Text, input.BackColor, input.TextColor = &quot;&quot;, &quot;Global.Black&quot;, &quot;Global.White&quot;
+    input.Text = &quot;&quot;
     uiElements.input = input
     
     local sendBtn = bottomGrid[2]:Append(&quot;UITextButton&quot;)
-    sendBtn.Text, sendBtn.BackColor, sendBtn.TextColor = &quot;SEND&quot;, &quot;Global.Purple&quot;, &quot;Global.White&quot;
+    sendBtn.Text = &quot;SEND&quot;
+    sendBtn.BackColor = &quot;Global.Purple&quot;
     
     sendBtn:SetSignalFunction(&quot;OnClick&quot;, function()
         local text = input.Text
         if text ~= &quot;&quot; then
             addMessage(&quot;ME&quot;, text)
-            writeRequest(text)
+            local file = io.open(requestFile, &quot;w&quot;)
+            if file then
+                file:write(string.format(&#x27;{&quot;question&quot;: &quot;%s&quot;, &quot;timestamp&quot;: %d}&#x27;, text, os.time()))
+                file:close()
+                Printf(&quot;ClawChat: Question envoyée.&quot;)
+            else
+                Printf(&quot;ClawChat: ERREUR D'ÉCRITURE FICHIER !&quot;)
+            end
             input.Text = &quot;&quot;
         end
     end)
     
-    addMessage(&quot;SYSTEM&quot;, &quot;ClawChat v1.1.1 Connecté.&quot;)
+    addMessage(&quot;SYSTEM&quot;, &quot;ClawChat v1.1.2 Prêt.&quot;)
+    Printf(&quot;ClawChat: Interface affichée.&quot;)
 end
 
 local function main()
     createUI()
     while true do
-        local response = readResponse()
-        if response then addMessage(&quot;CLAW&quot;, response) end
+        local file = io.open(responseFile, &quot;r&quot;)
+        if file then
+            local content = file:read(&quot;*all&quot;)
+            file:close()
+            local text = content:match(&#x27;&quot;response&quot;:%s*&quot;([^&quot;]+)&quot;&#x27;)
+            local ts = tonumber(content:match(&#x27;&quot;timestamp&quot;:%s*(%d+)&#x27;))
+            if text and ts and ts &gt; lastResponseTime then
+                lastResponseTime = ts
+                addMessage(&quot;CLAW&quot;, text)
+            end
+        end
         coroutine.yield(0.5)
     end
 end
 
-return main
-" />,path:
+return main" />
+    </Plugin>
+</GMA3>
