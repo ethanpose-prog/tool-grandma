@@ -1,6 +1,147 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <GMA3>
     <Plugin Name="ClawChat" Author="Picoclaw" Version="1.0.0">
-        <Component LuaCode="ClawChat.lua" />
+        <Component Name="Main" LuaCode="-- ClawChat for grandMA3
+-- Version: 1.0.0
+-- Author: Picoclaw 🦞 (Ethan - Impact Vision)
+-- Theme: Black &amp; Purple
+
+local pluginName = &quot;ClawChat&quot;
+local overlayName = &quot;ClawChatOverlay&quot;
+local requestFile = GetRootPath() .. &quot;/plugins/ClawChat/request.json&quot;
+local responseFile = GetRootPath() .. &quot;/plugins/ClawChat/response.json&quot;
+
+local messages = {}
+local uiElements = {}
+
+-- Helper to write JSON (minimalist)
+local function writeJson(path, data)
+    local file = io.open(path, &quot;w&quot;)
+    if file then
+        file:write(&#x27;{&quot;text&quot;: &quot;&#x27; .. data:gsub(&#x27;&quot;&#x27;, &#x27;\\&quot;&#x27;) .. &#x27;&quot;}&#x27;)
+        file:close()
+        return true
+    end
+    return false
+end
+
+-- Helper to read JSON (minimalist)
+local function readJson(path)
+    local file = io.open(path, &quot;r&quot;)
+    if file then
+        local content = file:read(&quot;*all&quot;)
+        file:close()
+        -- Simple extraction of &quot;text&quot; field
+        local text = content:match(&#x27;&quot;text&quot;:%s*&quot;([^&quot;]+)&quot;&#x27;)
+        if text then
+            os.remove(path) -- Delete after reading
+            return text
+        end
+    end
+    return nil
+end
+
+local function addMessage(sender, text)
+    table.insert(messages, {sender = sender, text = text})
+    if uiElements.scrollContent then
+        local label = uiElements.scrollContent:Append(&quot;UILabel&quot;)
+        label.Text = &quot;[&quot; .. sender .. &quot;] &quot; .. text
+        label.TextAlignH = &quot;Left&quot;
+        label.TextColor = (sender == &quot;ME&quot;) and &quot;Global.White&quot; or &quot;Global.Fuchsia&quot;
+        label.BackColor = &quot;Global.Transparent&quot;
+        label.Height = 30
+        
+        -- Auto-scroll to bottom
+        uiElements.scrollArea.ScrollV = 10000 
+    end
+end
+
+local function closeUI()
+    local display = GetDisplayByIndex(0)
+    local overlay = display:Find(overlayName)
+    if overlay then
+        overlay:Parent():Remove(overlay:Index())
+    end
+end
+
+local function createUI()
+    closeUI() -- Clean start
+    
+    local display = GetDisplayByIndex(0)
+    local mainOverlay = display:GetMainOverlay()
+    local overlay = mainOverlay:Append(&quot;UIElement&quot;)
+    overlay.Name = overlayName
+    overlay.H = 500
+    overlay.W = 400
+    overlay.X = 100
+    overlay.Y = 100
+    overlay.BackColor = &quot;Global.Black&quot;
+    
+    -- Main Grid
+    local grid = overlay:Append(&quot;UILayoutGrid&quot;)
+    grid.Columns = 1
+    grid.Rows = 2
+    grid[1].Height = &quot;80%&quot;
+    grid[2].Height = &quot;20%&quot;
+    
+    -- Chat History (Scroll Area)
+    local scrollArea = grid[1]:Append(&quot;UIScrollArea&quot;)
+    scrollArea.BackColor = &quot;Global.DarkGrey&quot;
+    uiElements.scrollArea = scrollArea
+    
+    local scrollContent = scrollArea:Append(&quot;UILayoutGrid&quot;)
+    scrollContent.Columns = 1
+    uiElements.scrollContent = scrollContent
+    
+    -- Bottom Bar (Input + Send)
+    local bottomGrid = grid[2]:Append(&quot;UILayoutGrid&quot;)
+    bottomGrid.Columns = 2
+    bottomGrid.Rows = 1
+    bottomGrid[1].Width = &quot;80%&quot;
+    bottomGrid[2].Width = &quot;20%&quot;
+    
+    local input = bottomGrid[1]:Append(&quot;UIInput&quot;)
+    input.Text = &quot;&quot;
+    input.BackColor = &quot;Global.Black&quot;
+    input.TextColor = &quot;Global.White&quot;
+    uiElements.input = input
+    
+    local sendBtn = bottomGrid[2]:Append(&quot;UITextButton&quot;)
+    sendBtn.Text = &quot;SEND&quot;
+    sendBtn.BackColor = &quot;Global.Purple&quot;
+    sendBtn.TextColor = &quot;Global.White&quot;
+    
+    -- Interaction
+    sendBtn:SetSignalFunction(&quot;OnClick&quot;, function()
+        local text = input.Text
+        if text ~= &quot;&quot; then
+            addMessage(&quot;ME&quot;, text)
+            writeJson(requestFile, text)
+            input.Text = &quot;&quot;
+        end
+    end)
+    
+    addMessage(&quot;SYSTEM&quot;, &quot;ClawChat Connecté. Pose ta question.&quot;)
+end
+
+local function main()
+    -- Create directory for communication if not exists
+    local dir = GetRootPath() .. &quot;/plugins/ClawChat&quot;
+    os.execute(&quot;mkdir -p &quot; .. dir)
+
+    createUI()
+    
+    -- Main Loop for Polling
+    while true do
+        local response = readJson(responseFile)
+        if response then
+            addMessage(&quot;CLAW&quot;, response)
+        end
+        coroutine.yield(0.5) -- Poll every 500ms
+    end
+end
+
+return main
+" />
     </Plugin>
 </GMA3>
