@@ -6,21 +6,16 @@
 return function()
     local version = "v1.1.8"
     Echo("========================================")
-    Echo("Picoclaw Chat Plugin " .. version .. " active")
+    Echo("Picoclaw Chat Plugin " .. version .. " loaded")
+    Echo("========================================")
     
-    local response = Confirm("Picoclaw 🦞", "Voulez-vous envoyer un message ?")
+    local msg = TextInput("Picoclaw Chat 🦞", "Tapez votre message pour l'IA...")
     
-    if response then
-        local msg = TextInput("Message", "Tapez ici...")
-        if msg and msg ~= "" then
-            Echo("Picoclaw: Message reçu: " .. msg)
-            MessageBox({
-                title = "Envoyé",
-                message = "Message transmis avec succès !",
-                commands = {{value = 1, name = "OK"}},
-                backColor = "0.2, 0.5, 0.2, 1"
-            })
-        end
+    if msg and msg ~= "" then
+        Echo("Picoclaw: Message reçu -> " .. msg)
+        Confirm("Message envoyé", "Votre message '" .. msg .. "' a été transmis à Picoclaw.")
+    else
+        Echo("ClawChat: Annulé ou message vide.")
     end
 end
 				]]>
