@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GMA3>
+    <Plugin Name="ClawChat" Author="Picoclaw" Version="1.0.0">
+        <Component LuaCode="ClawChat.lua" />
+    </Plugin>
+</GMA3>
