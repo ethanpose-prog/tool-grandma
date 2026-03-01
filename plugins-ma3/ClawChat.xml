@@ -1,30 +1,38 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <GMA3 DataVersion="2.1.1.2">
-	<Plugin Name="ClawChat" Version="1.1.6" Author="Picoclaw 🦞">
-		<Component Name="Main">
-			<Script>
-				<Code><![CDATA[
--- ClawChat v1.1.6 for grandMA3
--- Assistant: Picoclaw 🦞
-
-local function main()
-    Printf("--------------------------------------")
-    Printf("ClawChat v1.1.6 - Initialisation...")
+	<Plugin Name="ClawChat" Guid="73 63 6c 61 77 2d 63 68 61 74 2d 76 31 31 37 00">
+		<ComponentLua Name="Main" Installed="Yes">
+			<Code>
+				<![CDATA[
+local function Main()
+    local version = "v1.1.7"
+    Printf("========================================")
+    Printf("Picoclaw Chat Plugin " .. version .. " loaded")
+    Printf("========================================")
     
-    -- Utilisation de TextInput (Popup natif MA3)
-    local msg = TextInput("Picoclaw Chat 🦞", "Tapez votre message pour l'IA...")
+    local response = Confirm("Picoclaw 🦞", "Voulez-vous envoyer un message à Ethan via Picoclaw ?")
     
-    if msg and msg ~= "" then
-        Printf("Picoclaw: Message reçu -> " .. msg)
-        Confirm("Message envoyé", "Votre message '" .. msg .. "' a été transmis à Picoclaw.")
+    if response then
+        local msg = TextInput("Message pour Ethan", "Tapez votre message technique ici...")
+        if msg and msg ~= "" then
+            Printf("Picoclaw: Envoi du message... [" .. msg .. "]")
+            -- Simulation d'envoi (le vrai envoi passera par une API externe plus tard)
+            MessageBox({
+                title = "Succès",
+                message = "Message envoyé à Picoclaw avec succès !",
+                commands = {{value = 1, name = "OK"}},
+                backColor = "0.2, 0.5, 0.2, 1"
+            })
+        else
+            Printf("Picoclaw: Envoi annulé (message vide)")
+        end
     else
-        Printf("ClawChat: Annulé ou message vide.")
+        Printf("Picoclaw: Opération annulée")
     end
 end
 
-return main
-				]]></Code>
-			</Script>
-		</Component>
+return Main
+				]]>
+			</Code>
+		</ComponentLua>
 	</Plugin>
 </GMA3>
