@@ -70,8 +70,15 @@
         async function checkMA3() {
             const ip = ma3IpInput.value;
             try {
-                // We use a simple fetch to check if the Web Remote is reachable
-                const response = await fetch(`http://${ip}/remote/status`, { mode: 'no-cors' });
+                // We attempt to send an empty login or status request to verify the service is actually responding
+                const response = await fetch(`http://${ip}/remote/command`, { 
+                    method: 'POST',
+                    body: 'Login "" ""', // Safe command to check life
+                    mode: 'no-cors' 
+                });
+                
+                // In no-cors mode, we can't see the body, but if the fetch doesn't throw, 
+                // it means the server at least accepted the connection.
                 ma3Status.innerText = "MA3 READY";
                 ma3Status.classList.remove('bg-red-900', 'text-red-200');
                 ma3Status.classList.add('bg-green-900', 'text-green-200');
