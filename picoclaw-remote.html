@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Picoclaw 🦞 | Web Remote MA3</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #000000; color: #ffffff; font-family: 'Inter', sans-serif; }
+        .purple-gradient { background: linear-gradient(135deg, #9333ea 0%, #a855f7 100%); }
+        .chat-container { height: calc(100vh - 180px); }
+        .message-ai { background-color: #1e1b4b; border-left: 4px solid #9333ea; }
+        .message-user { background-color: #312e81; border-right: 4px solid #a855f7; }
+        .command-box { background-color: #000000; border: 1px solid #9333ea; font-family: 'Courier New', Courier, monospace; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #000000; }
+        ::-webkit-scrollbar-thumb { background: #9333ea; border-radius: 10px; }
+    </style>
+</head>
+<body class="overflow-hidden">
+
+    <!-- Header -->
+    <header class="p-4 border-b border-purple-900 flex justify-between items-center bg-black">
+        <div class="flex items-center gap-3">
+            <span class="text-2xl">🦞</span>
+            <div>
+                <h1 class="text-xl font-bold text-purple-500">Picoclaw AI</h1>
+                <p class="text-xs text-purple-300">Web Remote Bridge v1.0</p>
+            </div>
+        </div>
+        <div class="flex gap-4">
+            <div class="flex flex-col items-end">
+                <span id="ma3-status" class="text-[10px] px-2 py-0.5 rounded bg-red-900 text-red-200">MA3 DISCONNECTED</span>
+                <input id="ma3-ip" type="text" placeholder="Console IP (ex: 127.0.0.1)" class="bg-black border border-purple-900 text-[10px] px-2 py-1 mt-1 rounded text-purple-300 focus:outline-none focus:border-purple-500" value="127.0.0.1">
+            </div>
+        </div>
+    </header>
+
+    <!-- Chat Area -->
+    <main id="chat-window" class="chat-container overflow-y-auto p-4 space-y-4">
+        <!-- Welcome Message -->
+        <div class="message-ai p-4 rounded-lg max-w-[85%]">
+            <p class="text-sm">Salut Ethan ! Je suis ton assistant Picoclaw. Je peux générer des commandes pour ta grandMA3 et les envoyer directement via le Web Remote.</p>
+            <p class="text-xs mt-2 text-purple-300">• "Fais un cercle sur les Mac Aura"</p>
+            <p class="text-xs text-purple-300">• "Prépare un blackout progressif de 5s"</p>
+        </div>
+    </main>
+
+    <!-- Input Area -->
+    <footer class="fixed bottom-0 w-full p-4 bg-black border-t border-purple-900">
+        <div class="max-w-4xl mx-auto flex gap-2">
+            <input id="user-input" type="text" placeholder="Demander quelque chose..." class="flex-1 bg-zinc-900 border border-purple-900 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-purple-500">
+            <button id="send-btn" class="purple-gradient px-6 py-3 rounded-lg font-bold hover:opacity-90 transition-opacity">
+                ENVOYER
+            </button>
+        </div>
+    </footer>
+
+    <script>
+        const chatWindow = document.getElementById('chat-window');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const ma3IpInput = document.getElementById('ma3-ip');
+        const ma3Status = document.getElementById('ma3-status');
+
+        const AI_URL = "http://100.64.0.5:11434/v1/chat/completions";
+        const MODEL = "gemini-3-flash-preview:cloud";
+
+        // Check MA3 Connection
+        async function checkMA3() {
+            const ip = ma3IpInput.value;
+            try {
+                const response = await fetch(`http://${ip}/remote/status`, { mode: 'no-cors' });
+                ma3Status.innerText = "MA3 READY";
+                ma3Status.classList.remove('bg-red-900', 'text-red-200');
+                ma3Status.classList.add('bg-green-900', 'text-green-200');
+            } catch (e) {
+                ma3Status.innerText = "MA3 DISCONNECTED";
+                ma3Status.classList.add('bg-red-900', 'text-red-200');
+                ma3Status.classList.remove('bg-green-900', 'text-green-200');
+            }
+        }
+        setInterval(checkMA3, 5000);
+
+        // Send Command to MA3
+        async function sendToMA3(command) {
+            const ip = ma3IpInput.value;
+            try {
+                await fetch(`http://${ip}/remote/command`, {
+                    method: 'POST',
+                    body: command
+                });
+                console.log("Command sent:", command);
+            } catch (e) {
+                alert("Erreur d'envoi à la MA3. Vérifie l'IP et le Web Remote.");
+            }
+        }
+
+        function addMessage(text, role) {
+            const div = document.createElement('div');
+            div.className = `p-4 rounded-lg max-w-[85%] ${role === 'user' ? 'message-user ml-auto' : 'message-ai'}`;
+            
+            // Extract command if present (Format: MESSAGE ||| COMMAND)
+            if (role === 'ai' && text.includes('|||')) {
+                const [msg, cmd] = text.split('|||').map(s => s.trim());
+                div.innerHTML = `
+                    <p class="text-sm">${msg}</p>
+                    <div class="command-box mt-3 p-2 rounded text-xs flex justify-between items-center">
+                        <code class="text-purple-400">${cmd}</code>
+                        <button onclick="sendToMA3('${cmd.replace(/'/g, "\\'")}')" class="bg-purple-600 px-2 py-1 rounded text-[10px] font-bold hover:bg-purple-500">EXECUTE</button>
+                    </div>
+                `;
+            } else {
+                div.innerHTML = `<p class="text-sm">${text}</p>`;
+            }
+
+            chatWindow.appendChild(div);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        async function askAI() {
+            const prompt = userInput.value;
+            if (!prompt) return;
+
+            addMessage(prompt, 'user');
+            userInput.value = '';
+
+            try {
+                const response = await fetch(AI_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: MODEL,
+                        messages: [
+                            { role: "system", content: "Tu es un expert grandMA3 pour Impact Vision. Réponds TOUJOURS au format strict: MESSAGE ||| COMMAND. MESSAGE: explication courte. COMMAND: syntaxe gMA3. Sois bref." },
+                            { role: "user", content: prompt }
+                        ],
+                        temperature: 0.2
+                    })
+                });
+
+                const data = await response.json();
+                const aiResponse = data.choices[0].message.content;
+                addMessage(aiResponse, 'ai');
+            } catch (e) {
+                addMessage("Erreur de connexion à l'IA Picoclaw.", 'ai');
+            }
+        }
+
+        sendBtn.addEventListener('click', askAI);
+        userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') askAI(); });
+
+        window.sendToMA3 = sendToMA3;
+    </script>
+</body>
+</html>
