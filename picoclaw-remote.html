@@ -149,8 +149,14 @@
             addMessage(prompt, 'user');
             userInput.value = '';
 
+            // Add a "waiting" message
+            const waitingDiv = document.createElement('div');
+            waitingDiv.className = 'message-ai p-4 rounded-lg max-w-[85%] animate-pulse';
+            waitingDiv.innerHTML = '<p class="text-sm text-purple-300">Picoclaw réfléchit...</p>';
+            chatWindow.appendChild(waitingDiv);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+
             try {
-                // We call our internal API which acts as a proxy to the LLM
                 const response = await fetch(AI_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -163,12 +169,23 @@
                     })
                 });
 
+                chatWindow.removeChild(waitingDiv);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Server error: ${response.status} ${response.statusText} - ${errorText}`);
+                }
+
                 const data = await response.json();
-                const aiResponse = data.response; // The ai-automator API returns { "response": "..." }
-                addMessage(aiResponse, 'ai');
+                if (data.response) {
+                    addMessage(data.response, 'ai');
+                } else {
+                    throw new Error("Invalid response format from AI");
+                }
             } catch (e) {
+                if (waitingDiv.parentNode) chatWindow.removeChild(waitingDiv);
                 console.error("AI Error:", e);
-                addMessage("Erreur de connexion à l'IA Picoclaw. Vérifie que le serveur est en ligne.", 'ai');
+                addMessage(`❌ Erreur : ${e.message}. Vérifie que le serveur Picoclaw est accessible.`, 'ai');
             }
         }
 
