@@ -31,7 +31,7 @@
         <div class="flex gap-4">
             <div class="flex flex-col items-end">
                 <span id="ma3-status" class="text-[10px] px-2 py-0.5 rounded bg-red-900 text-red-200">MA3 DISCONNECTED</span>
-                <input id="ma3-ip" type="text" placeholder="Console IP (ex: 127.0.0.1)" class="bg-black border border-purple-900 text-[10px] px-2 py-1 mt-1 rounded text-purple-300 focus:outline-none focus:border-purple-500" value="127.0.0.1">
+                <input id="ma3-ip" type="text" placeholder="IP Console (ex: 192.168.1.50)" class="bg-black border border-purple-900 text-[10px] px-2 py-1 mt-1 rounded text-purple-300 focus:outline-none focus:border-purple-500" value="">
             </div>
         </div>
     </header>
@@ -69,23 +69,32 @@
         // Check MA3 Connection
         async function checkMA3() {
             const ip = ma3IpInput.value;
+            if (!ip || ip === '127.0.0.1' || ip === '0.0.0.0') {
+                ma3Status.innerText = "SET IP";
+                ma3Status.classList.add('bg-zinc-800');
+                return;
+            }
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 1500);
+
             try {
-                // We attempt to send an empty login or status request to verify the service is actually responding
-                const response = await fetch(`http://${ip}/remote/command`, { 
+                // We attempt a fetch with a short timeout
+                await fetch(`http://${ip}/remote/command`, { 
                     method: 'POST',
-                    body: 'Login "" ""', // Safe command to check life
-                    mode: 'no-cors' 
+                    body: 'Login "" ""',
+                    mode: 'no-cors',
+                    signal: controller.signal
                 });
                 
-                // In no-cors mode, we can't see the body, but if the fetch doesn't throw, 
-                // it means the server at least accepted the connection.
+                clearTimeout(timeoutId);
                 ma3Status.innerText = "MA3 READY";
-                ma3Status.classList.remove('bg-red-900', 'text-red-200');
+                ma3Status.classList.remove('bg-red-900', 'text-red-200', 'bg-zinc-800');
                 ma3Status.classList.add('bg-green-900', 'text-green-200');
             } catch (e) {
                 ma3Status.innerText = "MA3 DISCONNECTED";
                 ma3Status.classList.add('bg-red-900', 'text-red-200');
-                ma3Status.classList.remove('bg-green-900', 'text-green-200');
+                ma3Status.classList.remove('bg-green-900', 'text-green-200', 'bg-zinc-800');
             }
         }
         setInterval(checkMA3, 5000);
