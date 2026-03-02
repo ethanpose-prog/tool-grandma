@@ -63,13 +63,14 @@
         const ma3IpInput = document.getElementById('ma3-ip');
         const ma3Status = document.getElementById('ma3-status');
 
-        const AI_URL = "http://100.64.0.5:11434/v1/chat/completions";
+        const AI_URL = "/api/chat";
         const MODEL = "gemini-3-flash-preview:cloud";
 
         // Check MA3 Connection
         async function checkMA3() {
             const ip = ma3IpInput.value;
             try {
+                // We use a simple fetch to check if the Web Remote is reachable
                 const response = await fetch(`http://${ip}/remote/status`, { mode: 'no-cors' });
                 ma3Status.innerText = "MA3 READY";
                 ma3Status.classList.remove('bg-red-900', 'text-red-200');
@@ -86,9 +87,11 @@
         async function sendToMA3(command) {
             const ip = ma3IpInput.value;
             try {
+                // The gMA3 Web Remote expects a POST to /remote/command
                 await fetch(`http://${ip}/remote/command`, {
                     method: 'POST',
-                    body: command
+                    body: command,
+                    mode: 'no-cors' // Crucial for cross-origin requests to the console
                 });
                 console.log("Command sent:", command);
             } catch (e) {
@@ -101,13 +104,18 @@
             div.className = `p-4 rounded-lg max-w-[85%] ${role === 'user' ? 'message-user ml-auto' : 'message-ai'}`;
             
             // Extract command if present (Format: MESSAGE ||| COMMAND)
-            if (role === 'ai' && text.includes('|||')) {
-                const [msg, cmd] = text.split('|||').map(s => s.trim());
+            // We also handle potential markdown blocks around the response
+            let cleanText = text.replace(/```[a-z]*\n?/g, '').replace(/\n?```/g, '').trim();
+            
+            if (role === 'ai' && cleanText.includes('|||')) {
+                const parts = cleanText.split('|||');
+                const msg = parts[0].trim();
+                const cmd = parts[1].trim();
                 div.innerHTML = `
                     <p class="text-sm">${msg}</p>
                     <div class="command-box mt-3 p-2 rounded text-xs flex justify-between items-center">
-                        <code class="text-purple-400">${cmd}</code>
-                        <button onclick="sendToMA3('${cmd.replace(/'/g, "\\'")}')" class="bg-purple-600 px-2 py-1 rounded text-[10px] font-bold hover:bg-purple-500">EXECUTE</button>
+                        <code class="text-purple-400 font-mono">${cmd}</code>
+                        <button onclick="sendToMA3('${cmd.replace(/'/g, "\\'")}')" class="bg-purple-600 px-3 py-1.5 rounded text-[10px] font-bold hover:bg-purple-500 transition-colors uppercase">Execute</button>
                     </div>
                 `;
             } else {
@@ -126,24 +134,25 @@
             userInput.value = '';
 
             try {
+                // We call our internal API which acts as a proxy to the LLM
                 const response = await fetch(AI_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        model: MODEL,
+                        user: "Ethan",
                         messages: [
-                            { role: "system", content: "Tu es un expert grandMA3 pour Impact Vision. Réponds TOUJOURS au format strict: MESSAGE ||| COMMAND. MESSAGE: explication courte. COMMAND: syntaxe gMA3. Sois bref." },
+                            { role: "system", content: "INSTRUCTIONS MA3 : Tu es un expert grandMA3. Réponds TOUJOURS au format strict: MESSAGE ||| COMMAND. MESSAGE: explication très courte. COMMAND: syntaxe gMA3 exacte. Exemple: Allume les lyres ||| Fixture 1 Thru 10 At 100. Ne donne rien d'autre." },
                             { role: "user", content: prompt }
-                        ],
-                        temperature: 0.2
+                        ]
                     })
                 });
 
                 const data = await response.json();
-                const aiResponse = data.choices[0].message.content;
+                const aiResponse = data.response; // The ai-automator API returns { "response": "..." }
                 addMessage(aiResponse, 'ai');
             } catch (e) {
-                addMessage("Erreur de connexion à l'IA Picoclaw.", 'ai');
+                console.error("AI Error:", e);
+                addMessage("Erreur de connexion à l'IA Picoclaw. Vérifie que le serveur est en ligne.", 'ai');
             }
         }
 
