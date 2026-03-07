@@ -4,25 +4,49 @@
 
 ---
 
-## 🚀 1. Installation & Lancement
+## 🚀 1. Installation & Configuration
 
 ### Prérequis
-- Node.js (v18+)
-- Une console grandMA3 ou onPC (v2.0+) sur le même réseau.
+- **Node.js** (Version 18 ou supérieure)
+- **npm** (installé avec Node.js)
+- Une console **grandMA3** ou le logiciel **onPC** (v2.0+) sur le même réseau local.
 
-### Démarrage Rapide
-1. **Backend (Le Cerveau) :**
+### Installation Pas à Pas
+
+1. **Clonage du dépôt :** (Si tu ne l'as pas encore)
    ```bash
-   cd claw-control-ma3/backend
-   npm install
-   npm run dev
+   git clone https://github.com/ethanpose-prog/tool-grandma.git
+   cd tool-grandma/claw-control-ma3
    ```
-2. **Frontend (L'Interface) :**
+
+2. **Installation du Backend (Le Serveur) :**
    ```bash
-   cd claw-control-ma3/frontend
+   cd backend
    npm install
-   npm run dev
    ```
+
+3. **Installation du Frontend (L'Interface Web) :**
+   ```bash
+   cd ../frontend
+   npm install
+   ```
+
+### Configuration Réseau (Crucial)
+
+Avant de lancer le système, tu dois indiquer au serveur où se trouve ta console :
+1. Ouvre le fichier `backend/src/config/settings.ts`.
+2. Modifie la variable `MA3_IP` avec l'adresse IP de ta console.
+3. Vérifie que `OSC_PORT` correspond au port configuré dans ta console (par défaut `8000`).
+4. **Important :** Pour tester sans console, laisse `SIMULATION_MODE: true`. Pour un usage réel, passe-le à `false`.
+
+### Lancement du Système
+
+Tu dois lancer les deux composants simultanément (dans deux terminaux différents) :
+
+- **Terminal 1 (Backend) :** `npm run dev`
+- **Terminal 2 (Frontend) :** `npm run dev`
+
+L'interface sera alors accessible sur `http://localhost:5173`.
 
 ---
 
